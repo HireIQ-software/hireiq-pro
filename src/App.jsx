@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { supabase } from "./supabase.js";
 
 /* ─── FONTS ─────────────────────────────────────────────────────────────── */
 const FONTS = `@import url('https://fonts.googleapis.com/css2?family=Epilogue:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@300;400;500;700&display=swap');`;
@@ -463,7 +464,7 @@ function scoreClass(s){ return s>=75?"hi":s>=50?"mid":"lo" }
 function barColor(s){ return s>=75?"var(--green)":s>=50?"var(--amber)":"var(--rose)" }
 
 /* ─── MAIN ──────────────────────────────────────────────────────────────── */
-export default function HireIQPro() {
+export default function HireIQPro({ session }) {
   const [tab, setTab] = useState("analyze");
   const [form, setForm] = useState({
     role:"", jd:"", candidate:"", notes:"", seniority:"mid"
@@ -480,6 +481,37 @@ export default function HireIQPro() {
   const [toast, setToast] = useState(null);
   const [recording, setRecording] = useState(false);
   const recognitionRef = useRef(null);
+  const [profile, setProfile] = useState(null);
+
+  // Load user profile + usage
+  useEffect(() => {
+    if (!session) return;
+    const loadProfile = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+      if (data) setProfile(data);
+    };
+    loadProfile();
+  }, [session]);
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  const incrementUsage = async () => {
+    if (!session) return;
+    const newCount = (profile?.analyses_used || 0) + 1;
+    await supabase.from('profiles').update({ analyses_used: newCount }).eq('id', session.user.id);
+    setProfile(p => ({ ...p, analyses_used: newCount }));
+  };
+
+  const isLimitReached = () => {
+    if (!profile) return false;
+    return (profile.analyses_used || 0) >= (profile.analyses_limit || 10);
+  };
 
   /* mic transcription */
   const toggleMic = useCallback(() => {
@@ -537,6 +569,7 @@ export default function HireIQPro() {
   /* ── ANALYZE ── */
   const analyze = async () => {
     if (!form.notes.trim() || !form.role.trim()) return;
+    if (isLimitReached()) { showToast("⚠️ Monthly limit reached — upgrade to continue"); return; }
     setLoading(true); setResult(null);
 
     const ratingsText = skillsList.map(s=>`${s}: ${skills[s]||0}/5 (recruiter gut rating)`).join(", ");
@@ -582,6 +615,7 @@ Return EXACTLY this JSON:
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setResult(data);
+      await incrementUsage();
     } catch(e) {
       setResult({error:true});
     }
@@ -637,6 +671,31 @@ Return EXACTLY this JSON:
           <div className="nav-right">
             {candidates.length>0 && (
               <div className="cand-count">{candidates.length} candidate{candidates.length!==1?"s":""} tracked</div>
+            )}
+            {profile && (
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <div style={{
+                  fontFamily:"var(--mono)",fontSize:11,
+                  background: isLimitReached() ? "rgba(248,113,113,.1)" : "rgba(56,189,248,.08)",
+                  color: isLimitReached() ? "var(--rose)" : "var(--hi)",
+                  border: `1px solid ${isLimitReached() ? "rgba(248,113,113,.25)" : "rgba(56,189,248,.2)"}`,
+                  padding:"3px 10px",borderRadius:20,
+                }}>
+                  {isLimitReached() ? "⚠ Limit reached" : `${profile.analyses_used||0}/${profile.analyses_limit||10} analyses`}
+                </div>
+                <div style={{fontSize:11,color:"var(--sub)",fontFamily:"var(--mono)"}}>
+                  {session?.user?.email?.split("@")[0]}
+                </div>
+                <button onClick={signOut} style={{
+                  background:"none",border:"1px solid var(--line2)",
+                  borderRadius:6,padding:"4px 10px",
+                  color:"var(--sub)",fontFamily:"var(--mono)",fontSize:10,
+                  cursor:"pointer",letterSpacing:1,transition:".15s"
+                }}
+                onMouseOver={e=>e.target.style.color="var(--rose)"}
+                onMouseOut={e=>e.target.style.color="var(--sub)"}
+                >SIGN OUT</button>
+              </div>
             )}
           </div>
         </nav>
@@ -752,11 +811,31 @@ Return EXACTLY this JSON:
               <div className="results-scroll">
 
                 {!loading && !result && (
-                  <div className="empty">
-                    <div className="empty-icon">🎯</div>
-                    <div className="empty-h">Awaiting Analysis</div>
-                    <div className="empty-p">Fill in interview details on the left and click Generate to get your AI scorecard</div>
-                  </div>
+                  isLimitReached() ? (
+                    <div className="empty">
+                      <div className="empty-icon">🔒</div>
+                      <div className="empty-h">Free Limit Reached</div>
+                      <div className="empty-p" style={{maxWidth:260}}>
+                        You've used all {profile?.analyses_limit||10} free analyses this month.
+                        Upgrade to Pro for unlimited scorecards.
+                      </div>
+                      <a href="mailto:hireiqpro@gmail.com?subject=Upgrade to Pro"
+                        style={{
+                          marginTop:8,padding:"10px 24px",
+                          background:"linear-gradient(135deg,var(--hi),var(--hi2))",
+                          borderRadius:8,color:"#000",fontWeight:700,fontSize:13,
+                          textDecoration:"none",display:"inline-block"
+                        }}>
+                        Upgrade to Pro — $49/mo
+                      </a>
+                    </div>
+                  ) : (
+                    <div className="empty">
+                      <div className="empty-icon">🎯</div>
+                      <div className="empty-h">Awaiting Analysis</div>
+                      <div className="empty-p">Fill in interview details on the left and click Generate to get your AI scorecard</div>
+                    </div>
+                  )
                 )}
 
                 {loading && (
