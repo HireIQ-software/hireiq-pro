@@ -434,6 +434,122 @@ textarea.inp{resize:none;line-height:1.65;min-height:110px}
   border-radius:6px;padding:7px 10px;line-height:1.6;margin-top:2px;
 }
 .clarify-note strong{color:var(--sub)}
+/* ── INTERVIEW SESSION ── */
+.interview-shell{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--ink)}
+.interview-header{
+  padding:16px 24px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--ink2);flex-shrink:0;
+}
+.interview-role-info{display:flex;flex-direction:column;gap:3px}
+.interview-role-name{font:700 15px var(--font)}
+.interview-candidate{font:400 12px var(--font);color:var(--sub)}
+.interview-progress{display:flex;align-items:center;gap:12px}
+.progress-bar-wrap{width:160px;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--hi),var(--hi2));border-radius:2px;transition:width .4s ease}
+.progress-label{font:500 11px var(--mono);color:var(--sub);white-space:nowrap}
+
+.interview-body{flex:1;overflow:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px}
+.question-card{
+  width:100%;max-width:680px;
+  background:var(--ink2);border:1px solid var(--line);
+  border-radius:16px;padding:32px;
+  display:flex;flex-direction:column;gap:24px;
+  animation:riseIn .35s ease;
+}
+.question-meta{display:flex;align-items:center;gap:10px}
+.question-num{font:700 11px var(--mono);color:var(--hi);letter-spacing:1px}
+.question-skill-tag{
+  font:600 10px var(--mono);letter-spacing:.5px;
+  background:rgba(129,140,248,.1);color:var(--hi2);
+  border:1px solid rgba(129,140,248,.2);padding:2px 8px;border-radius:4px;
+}
+.question-type-tag{
+  font:600 10px var(--mono);letter-spacing:.5px;
+  background:var(--ink3);color:var(--sub);
+  border:1px solid var(--line2);padding:2px 8px;border-radius:4px;
+}
+.question-text{font:600 20px var(--font);line-height:1.5;letter-spacing:-.3px}
+.question-hint{font:400 12px var(--font);color:var(--sub);line-height:1.6;
+  background:var(--ink3);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+
+.rating-section{display:flex;flex-direction:column;gap:10px}
+.rating-label{font:600 11px var(--mono);letter-spacing:1px;text-transform:uppercase;color:var(--sub)}
+.rating-buttons{display:flex;gap:8px}
+.rating-btn{
+  flex:1;padding:14px 8px;
+  background:var(--ink3);border:2px solid var(--line2);
+  border-radius:10px;cursor:pointer;transition:all .15s;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+}
+.rating-btn:hover{border-color:var(--hi);background:rgba(56,189,248,.05)}
+.rating-btn.selected-1{border-color:var(--rose);background:rgba(248,113,113,.1);color:var(--rose)}
+.rating-btn.selected-2{border-color:var(--amber);background:rgba(251,191,36,.08);color:var(--amber)}
+.rating-btn.selected-3{border-color:var(--amber);background:rgba(251,191,36,.08);color:var(--amber)}
+.rating-btn.selected-4{border-color:var(--green);background:rgba(52,211,153,.08);color:var(--green)}
+.rating-btn.selected-5{border-color:var(--green);background:rgba(52,211,153,.1);color:var(--green)}
+.rating-num{font:900 18px var(--font)}
+.rating-desc{font:500 9px var(--mono);letter-spacing:.5px;text-transform:uppercase;opacity:.7}
+
+.note-area{
+  background:var(--ink3);border:1px solid var(--line2);
+  border-radius:8px;padding:10px 14px;
+  color:var(--text);font:400 13px var(--font);
+  outline:none;resize:none;line-height:1.6;width:100%;
+  transition:border .15s;
+}
+.note-area:focus{border-color:var(--hi)}
+.note-area::placeholder{color:var(--dim)}
+
+.interview-nav{display:flex;gap:10px;justify-content:flex-end}
+.next-btn{
+  padding:12px 28px;
+  background:linear-gradient(135deg,var(--hi),var(--hi2));
+  border:none;border-radius:9px;color:#000;font:700 14px var(--font);
+  cursor:pointer;transition:all .2s;
+}
+.next-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 20px rgba(56,189,248,.2)}
+.next-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.skip-btn{
+  padding:12px 18px;background:none;border:1px solid var(--line2);
+  border-radius:9px;color:var(--sub);font:600 13px var(--font);cursor:pointer;
+  transition:.15s;
+}
+.skip-btn:hover{border-color:var(--text);color:var(--text)}
+
+.generating-questions{
+  display:flex;flex-direction:column;align-items:center;gap:16px;
+  color:var(--sub);text-align:center;
+}
+
+/* ── PIPELINE BY ROLE ── */
+.pipeline-role-list{display:flex;flex-direction:column;gap:10px}
+.pipeline-role-row{
+  background:var(--ink2);border:1px solid var(--line);
+  border-radius:10px;padding:16px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  cursor:pointer;transition:.2s;
+}
+.pipeline-role-row:hover{border-color:var(--hi);background:rgba(56,189,248,.03)}
+.pipeline-role-row.expanded{border-color:var(--line2);border-radius:10px 10px 0 0}
+.pipeline-role-name{font:700 15px var(--font)}
+.pipeline-role-meta{display:flex;align-items:center;gap:12px}
+.pipeline-candidates-table{
+  background:var(--ink2);border:1px solid var(--line2);
+  border-top:none;border-radius:0 0 10px 10px;
+  overflow:hidden;margin-bottom:4px;
+}
+.pct th{
+  padding:10px 16px;text-align:left;
+  font:700 10px var(--mono);letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--sub);border-bottom:1px solid var(--line);background:var(--ink3);
+}
+.pct td{padding:11px 16px;font-size:13px;border-bottom:1px solid var(--line)}
+.pct tr:last-child td{border-bottom:none}
+.pct tr:hover td{background:rgba(56,189,248,.03);cursor:pointer}
+.chevron{transition:transform .2s;font-size:12px;color:var(--sub)}
+.chevron.open{transform:rotate(90deg)}
+`;
 
 /* ── ROLES PAGE ── */
 .roles-view{flex:1;overflow:auto;padding:24px;display:flex;flex-direction:column;gap:20px}
@@ -562,6 +678,16 @@ export default function HireIQPro({ session }) {
   const [profile, setProfile] = useState(null);
   const [roles, setRoles] = useState([]);
   const [selectedRole, setSelectedRole] = useState(null);
+  const [interviewMode, setInterviewMode] = useState(false);
+  const [interviewCandidate, setInterviewCandidate] = useState("");
+  const [questions, setQuestions] = useState([]);
+  const [currentQ, setCurrentQ] = useState(0);
+  const [answers, setAnswers] = useState([]);
+  const [currentRating, setCurrentRating] = useState(0);
+  const [currentNote, setCurrentNote] = useState("");
+  const [generatingQuestions, setGeneratingQuestions] = useState(false);
+  const [expandedPipelineRole, setExpandedPipelineRole] = useState(null);
+  const [pipelineCandidates, setPipelineCandidates] = useState([]);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
   const [roleForm, setRoleForm] = useState({title:"",seniority:"mid",job_description:""});
@@ -734,6 +860,176 @@ export default function HireIQPro({ session }) {
     setSkills(s=>{ const n={...s}; delete n[name]; return n; });
   };
 
+  /* ── INTERVIEW ── */
+  const questionCount = (seniority) => {
+    return {junior:5, mid:7, senior:8, lead:10, exec:10}[seniority] || 7;
+  };
+
+  const startInterview = async (candidateName) => {
+    if (!candidateName.trim() || !selectedRole) return;
+    setInterviewCandidate(candidateName);
+    setGeneratingQuestions(true);
+    setInterviewMode(true);
+    setAnswers([]);
+    setCurrentQ(0);
+    setCurrentRating(0);
+    setCurrentNote("");
+
+    const count = questionCount(selectedRole.seniority);
+    const skills = (selectedRole.skills && selectedRole.skills.length > 0)
+      ? selectedRole.skills.join(", ")
+      : skillsList.join(", ");
+
+    const prompt = `You are an expert interviewer. Generate exactly ${count} interview questions for this role.
+
+Role: ${selectedRole.title}
+Seniority: ${selectedRole.seniority}
+Job Description: ${selectedRole.job_description || "Not provided"}
+Skills to evaluate: ${skills}
+
+Rules:
+- Mix question types: technical (30%), behavioral (30%), situational (25%), culture/motivation (15%)
+- Weight technical questions higher for senior/lead roles
+- Each question should target a specific skill
+- Questions should be concise and clear — readable aloud in 10 seconds
+- Include a short hint for the recruiter (what a good answer looks like)
+
+Return ONLY valid JSON array, no markdown:
+[
+  {
+    "question": "<the question to ask>",
+    "skill": "<which skill this evaluates>",
+    "type": "<Technical|Behavioral|Situational|Culture>",
+    "hint": "<what a strong answer looks like, 1 sentence>"
+  }
+]`;
+
+    try {
+      const res = await fetch("/api/analyze", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({prompt})
+      });
+      const data = await res.json();
+      const text = typeof data === 'string' ? data : JSON.stringify(data);
+      // Try to parse — data might already be parsed or be raw text
+      let parsed;
+      try { parsed = typeof data === 'object' && Array.isArray(data) ? data : JSON.parse(text.replace(/```json|```/g,"")); }
+      catch { parsed = data; }
+      if (Array.isArray(parsed)) {
+        setQuestions(parsed);
+      } else {
+        // fallback questions
+        const fallback = Array.from({length:count}, (_,i) => ({
+          question: `Tell me about a time you demonstrated ${skills.split(",")[i % skills.split(",").length]?.trim() || "problem solving"} in your previous role.`,
+          skill: skills.split(",")[i % skills.split(",").length]?.trim() || "General",
+          type: "Behavioral",
+          hint: "Look for specific examples with measurable outcomes."
+        }));
+        setQuestions(fallback);
+      }
+    } catch(e) {
+      console.error(e);
+    }
+    setGeneratingQuestions(false);
+  };
+
+  const submitAnswer = async () => {
+    const newAnswers = [...answers, {
+      question: questions[currentQ]?.question,
+      skill: questions[currentQ]?.skill,
+      type: questions[currentQ]?.type,
+      rating: currentRating,
+      note: currentNote
+    }];
+    setAnswers(newAnswers);
+    setCurrentRating(0);
+    setCurrentNote("");
+
+    if (currentQ + 1 >= questions.length) {
+      // All questions done — generate scorecard
+      await generateScorecardFromInterview(newAnswers);
+    } else {
+      setCurrentQ(q => q + 1);
+    }
+  };
+
+  const generateScorecardFromInterview = async (allAnswers) => {
+    setInterviewMode(false);
+    setLoading(true);
+    setResult(null);
+    setTab("analyze");
+
+    const answersText = allAnswers.map((a,i) =>
+      `Q${i+1} [${a.skill} - ${a.type}]: ${a.question}\nRecruiter rating: ${a.rating}/5${a.note ? "\nNotes: " + a.note : ""}`
+    ).join("\n\n");
+
+    const skillsJson = [...new Set(allAnswers.map(a=>a.skill))].map(s=>`"${s}":<0-100>`).join(",");
+
+    const prompt = `You are a senior recruiting analyst. Analyze this structured interview and return ONLY valid JSON, no markdown.
+
+Role: ${selectedRole.title}
+Seniority: ${selectedRole.seniority}
+Candidate: ${interviewCandidate}
+Job Description: ${selectedRole.job_description || "Not provided"}
+
+Interview Q&A (recruiter rated each answer 1-5):
+${answersText}
+
+Return EXACTLY this JSON:
+{
+  "overallScore": <0-100>,
+  "jdMatchScore": <0-100 or null>,
+  "verdict": "<Strong Hire|Lean Hire|Borderline|Lean No Hire|No Hire>",
+  "summary": "<2-3 sentence assessment>",
+  "strengths": ["s1","s2","s3"],
+  "concerns": ["c1","c2"],
+  "contradictions": [],
+  "biasFlags": [],
+  "skillScores": {${skillsJson || '"Overall":<0-100>'}},
+  "gutVsAiFlags": [],
+  "nextSteps": ["s1","s2","s3"],
+  "advanceEmail": "<professional advance email>",
+  "rejectEmail": "<professional rejection email>",
+  "holdEmail": "<hold email>",
+  "followUpQuestions": ["q1","q2","q3"]
+}`;
+
+    try {
+      const res = await fetch("/api/analyze", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({prompt})
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setResult(data);
+      setForm(f=>({...f,candidate:interviewCandidate}));
+      await incrementUsage();
+      const matchedRole = roles.find(r=>r.title===selectedRole.title&&r.status==='active');
+      if (matchedRole) {
+        const newCount = (matchedRole.candidates_count||0)+1;
+        await supabase.from('roles').update({candidates_count:newCount}).eq('id',matchedRole.id);
+        setRoles(r=>r.map(x=>x.id===matchedRole.id?{...x,candidates_count:newCount}:x));
+      }
+      // Save to pipeline candidates in DB
+      await supabase.from('pipeline_candidates').insert({
+        user_id: session.user.id,
+        role_id: matchedRole?.id,
+        role_title: selectedRole.title,
+        candidate_name: interviewCandidate,
+        score: data.overallScore,
+        verdict: data.verdict,
+        jd_match: data.jdMatchScore,
+        skill_scores: data.skillScores,
+        summary: data.summary,
+      });
+    } catch(e) {
+      setResult({error:true});
+    }
+    setLoading(false);
+  };
+
   /* ── ANALYZE ── */
   const analyze = async () => {
     if (!form.notes.trim() || !form.role.trim()) return;
@@ -876,8 +1172,89 @@ Return EXACTLY this JSON:
           </div>
         </nav>
 
+        {/* ── INTERVIEW MODE ── */}
+        {interviewMode && (
+          <div className="view active" style={{display:"flex"}}>
+            <div className="interview-shell">
+              <div className="interview-header">
+                <div className="interview-role-info">
+                  <div className="interview-role-name">{selectedRole?.title} · {selectedRole?.seniority}</div>
+                  <div className="interview-candidate">Interviewing: {interviewCandidate}</div>
+                </div>
+                <div className="interview-progress">
+                  <div className="progress-bar-wrap">
+                    <div className="progress-bar-fill" style={{width: questions.length ? `${((currentQ)/questions.length)*100}%` : '0%'}}/>
+                  </div>
+                  <div className="progress-label">{generatingQuestions ? "Loading..." : `${currentQ+1} / ${questions.length}`}</div>
+                  <button className="skip-btn" style={{padding:"6px 12px",fontSize:11}} onClick={()=>{setInterviewMode(false);setTab("analyze");}}>✕ Exit</button>
+                </div>
+              </div>
+
+              <div className="interview-body">
+                {generatingQuestions ? (
+                  <div className="generating-questions">
+                    <div className="spin-ring" style={{width:52,height:52,fontSize:20}}>🤖</div>
+                    <div style={{font:"500 13px var(--mono)",color:"var(--hi)",letterSpacing:1}}>GENERATING QUESTIONS</div>
+                    <div style={{fontSize:12,color:"var(--sub)"}}>Tailoring questions for {selectedRole?.title}...</div>
+                  </div>
+                ) : questions[currentQ] ? (
+                  <div className="question-card">
+                    <div className="question-meta">
+                      <span className="question-num">Q{currentQ+1}</span>
+                      <span className="question-skill-tag">{questions[currentQ].skill}</span>
+                      <span className="question-type-tag">{questions[currentQ].type}</span>
+                    </div>
+
+                    <div className="question-text">{questions[currentQ].question}</div>
+
+                    {questions[currentQ].hint && (
+                      <div className="question-hint">
+                        <span style={{color:"var(--hi)",fontWeight:600,fontSize:10,fontFamily:"var(--mono)",letterSpacing:1}}>GOOD ANSWER LOOKS LIKE: </span>
+                        {questions[currentQ].hint}
+                      </div>
+                    )}
+
+                    <div className="rating-section">
+                      <div className="rating-label">Rate candidate's answer</div>
+                      <div className="rating-buttons">
+                        {[
+                          {n:1,label:"Poor"},
+                          {n:2,label:"Weak"},
+                          {n:3,label:"OK"},
+                          {n:4,label:"Good"},
+                          {n:5,label:"Great"},
+                        ].map(r=>(
+                          <button key={r.n} className={`rating-btn ${currentRating===r.n?`selected-${r.n}`:""}`}
+                            onClick={()=>setCurrentRating(r.n)}>
+                            <span className="rating-num">{r.n}</span>
+                            <span className="rating-desc">{r.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                      <div style={{font:"600 11px var(--mono)",letterSpacing:1,textTransform:"uppercase",color:"var(--sub)"}}>Quick Note <span style={{fontWeight:400,color:"var(--dim)"}}>(optional)</span></div>
+                      <textarea className="note-area" rows={2}
+                        placeholder="Key points from their answer..."
+                        value={currentNote} onChange={e=>setCurrentNote(e.target.value)}/>
+                    </div>
+
+                    <div className="interview-nav">
+                      <button className="skip-btn" onClick={()=>{setCurrentRating(3);setCurrentNote("Skipped");submitAnswer();}}>Skip</button>
+                      <button className="next-btn" disabled={currentRating===0} onClick={submitAnswer}>
+                        {currentQ+1 >= questions.length ? "🎯 Generate Scorecard" : "Next Question →"}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── ANALYZE ── */}
-        <div className={`view active`} style={{display: tab==="analyze"?"flex":"none"}}>
+        <div className={`view active`} style={{display: tab==="analyze" && !interviewMode ?"flex":"none"}}>
           <div className="analyze-layout">
 
             {/* LEFT */}
@@ -962,9 +1339,20 @@ Return EXACTLY this JSON:
                     </div>
 
                   </div>
-                  <button className="analyze-btn" onClick={analyze} disabled={loading||!form.notes.trim()}>
-                    {loading ? "⟳ Analyzing..." : "⚡ Generate Scorecard"}
-                  </button>
+                  <div style={{display:"flex",flexDirection:"column",gap:8,margin:"0 0 0 0"}}>
+                    <button className="analyze-btn" style={{background:"linear-gradient(135deg,var(--green),#059669)"}}
+                      onClick={()=>{
+                        if(!form.candidate.trim()){showToast("Enter candidate name first");return;}
+                        startInterview(form.candidate);
+                      }}
+                      disabled={loading||!form.candidate.trim()}>
+                      🎤 Start Guided Interview
+                    </button>
+                    <button className="analyze-btn" onClick={analyze} disabled={loading||!form.notes.trim()}
+                      style={{background:"linear-gradient(135deg,var(--hi),var(--hi2))"}}>
+                      {loading ? "⟳ Analyzing..." : "⚡ Analyze Notes Instead"}
+                    </button>
+                  </div>
                 </>
               )}
             </div>
@@ -1293,61 +1681,103 @@ Return EXACTLY this JSON:
           <div className="pipeline-view">
             <div className="pipeline-head">
               <span className="pipeline-title">Hiring Pipeline</span>
-              <span style={{font:"400 12px var(--font)",color:"var(--sub)"}}>{candidates.length} total candidates</span>
+              <span style={{font:"400 12px var(--font)",color:"var(--sub)"}}>
+                {roles.filter(r=>r.status==="active").length} active roles
+              </span>
             </div>
 
-            {candidates.length === 0 ? (
-              <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,color:"var(--sub)"}}>
+            {roles.filter(r=>r.candidates_count>0||r.status==="active").length === 0 ? (
+              <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,color:"var(--sub)",paddingBottom:60}}>
                 <div style={{fontSize:44,opacity:.2}}>📊</div>
                 <div style={{font:"700 16px var(--font)",opacity:.2}}>Pipeline Empty</div>
-                <div style={{fontSize:12,maxWidth:220,textAlign:"center",lineHeight:1.6,opacity:.5}}>Analyze and save candidates to build your hiring pipeline</div>
+                <div style={{fontSize:12,maxWidth:240,textAlign:"center",lineHeight:1.6,opacity:.5}}>
+                  Create roles and interview candidates to build your pipeline
+                </div>
               </div>
             ) : (
-              <div className="pipeline-table">
-                <table className="ptable">
-                  <thead>
-                    <tr>
-                      <th>Candidate</th>
-                      <th>Role</th>
-                      <th>Score</th>
-                      <th>JD Fit</th>
-                      <th>Verdict</th>
-                      <th>Comm</th>
-                      <th>Technical</th>
-                      <th>Culture</th>
-                      <th>Saved</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[...candidates].sort((a,b)=>b.score-a.score).map((c,i)=>{
-                      const vc = VERDICT_COLORS[c.verdict] || VERDICT_COLORS["Borderline"];
-                      return (
-                        <tr key={i}>
-                          <td>
-                            <div style={{display:"flex",alignItems:"center",gap:10}}>
-                              <span style={{fontSize:18}}>{AVATARS[c.avatarIdx]}</span>
-                              <span style={{fontWeight:600}}>{c.name}</span>
+              <div className="pipeline-role-list">
+                {roles.filter(r=>r.status==="active").map(role=>{
+                  const isExpanded = expandedPipelineRole === role.id;
+                  const roleCands = candidates.filter(c=>c.role===role.title);
+                  const vc_top = roleCands.length > 0 ? VERDICT_COLORS[roleCands.sort((a,b)=>b.score-a.score)[0]?.verdict]||VERDICT_COLORS["Borderline"] : null;
+                  return (
+                    <div key={role.id}>
+                      <div className={`pipeline-role-row ${isExpanded?"expanded":""}`}
+                        onClick={()=>setExpandedPipelineRole(isExpanded?null:role.id)}>
+                        <div style={{display:"flex",alignItems:"center",gap:14}}>
+                          <div>
+                            <div className="pipeline-role-name">{role.title}</div>
+                            <div style={{font:"400 11px var(--mono)",color:"var(--sub)",marginTop:3}}>
+                              {role.seniority} · {role.candidates_count||0} candidate{(role.candidates_count||0)!==1?"s":""} interviewed
                             </div>
-                          </td>
-                          <td style={{color:"var(--sub)",fontSize:12}}>{c.role}</td>
-                          <td><span className="score-num" style={{color:barColor(c.score)}}>{c.score}</span></td>
-                          <td style={{color:c.jdMatch!=null?barColor(c.jdMatch):"var(--dim)"}}>
-                            {c.jdMatch!=null?`${c.jdMatch}%`:"—"}
-                          </td>
-                          <td>
-                            <span className="status-chip" style={{background:vc.bg,color:vc.text,border:`1px solid ${vc.border}`}}>
-                              {c.verdict}
-                            </span>
-                          </td>
-                          <td style={{color:barColor(c.skillScores?.Communication||0),font:"600 12px var(--mono)"}}>{c.skillScores?.Communication||"—"}</td>
-                          <td style={{color:barColor(c.skillScores?.Technical||0),font:"600 12px var(--mono)"}}>{c.skillScores?.Technical||"—"}</td>
-                          <td style={{color:barColor(c.skillScores?.["Culture Fit"]||0),font:"600 12px var(--mono)"}}>{c.skillScores?.["Culture Fit"]||"—"}</td>
-                          <td style={{color:"var(--sub)",fontSize:11,fontFamily:"var(--mono)"}}>{c.savedAt}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                          </div>
+                        </div>
+                        <div className="pipeline-role-meta">
+                          {vc_top && roleCands.length > 0 && (
+                            <div style={{font:"500 12px var(--mono)",color:barColor(roleCands.sort((a,b)=>b.score-a.score)[0]?.score)}}>
+                              Top: {roleCands.sort((a,b)=>b.score-a.score)[0]?.score}/100
+                            </div>
+                          )}
+                          <span className="role-card-seniority">{role.candidates_count||0} candidates</span>
+                          <span className="chevron" style={{transform:isExpanded?"rotate(90deg)":"none"}}>▶</span>
+                        </div>
+                      </div>
+
+                      {isExpanded && (
+                        <div className="pipeline-candidates-table">
+                          {roleCands.length === 0 ? (
+                            <div style={{padding:"20px 20px",font:"400 12px var(--font)",color:"var(--sub)",textAlign:"center"}}>
+                              No candidates interviewed yet.
+                              <button className="role-action-btn primary" style={{marginLeft:12}}
+                                onClick={()=>{selectRole(role);setTab("analyze");}}>
+                                ⚡ Start Interviewing
+                              </button>
+                            </div>
+                          ) : (
+                            <table className="ptable pct" style={{width:"100%",borderCollapse:"collapse"}}>
+                              <thead>
+                                <tr>
+                                  <th>Candidate</th>
+                                  <th>Score</th>
+                                  <th>JD Fit</th>
+                                  <th>Verdict</th>
+                                  <th>Summary</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {[...roleCands].sort((a,b)=>b.score-a.score).map((c,i)=>{
+                                  const vc = VERDICT_COLORS[c.verdict]||VERDICT_COLORS["Borderline"];
+                                  return (
+                                    <tr key={i}>
+                                      <td>
+                                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                                          <span style={{fontSize:16}}>{AVATARS[c.avatarIdx||0]}</span>
+                                          <span style={{fontWeight:600}}>{c.name}</span>
+                                        </div>
+                                      </td>
+                                      <td><span style={{font:"700 13px var(--mono)",color:barColor(c.score)}}>{c.score}</span></td>
+                                      <td style={{color:c.jdMatch!=null?barColor(c.jdMatch):"var(--dim)",font:"500 12px var(--mono)"}}>
+                                        {c.jdMatch!=null?`${c.jdMatch}%`:"—"}
+                                      </td>
+                                      <td>
+                                        <span className="status-chip" style={{background:vc.bg,color:vc.text,border:`1px solid ${vc.border}`}}>
+                                          {c.verdict}
+                                        </span>
+                                      </td>
+                                      <td style={{fontSize:12,color:"var(--sub)",maxWidth:200}}>
+                                        {c.summary?.slice(0,80)}{c.summary?.length>80?"…":""}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
