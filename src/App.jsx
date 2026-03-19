@@ -549,7 +549,6 @@ textarea.inp{resize:none;line-height:1.65;min-height:110px}
 .pct tr:hover td{background:rgba(56,189,248,.03);cursor:pointer}
 .chevron{transition:transform .2s;font-size:12px;color:var(--sub)}
 .chevron.open{transform:rotate(90deg)}
-`;
 
 /* ── ROLES PAGE ── */
 .roles-view{flex:1;overflow:auto;padding:24px;display:flex;flex-direction:column;gap:20px}
