@@ -1234,7 +1234,7 @@ Return EXACTLY this JSON:
 
                     <div style={{display:"flex",flexDirection:"column",gap:6}}>
                       <div style={{font:"600 11px var(--mono)",letterSpacing:1,textTransform:"uppercase",color:"var(--sub)"}}>Quick Note <span style={{fontWeight:400,color:"var(--dim)"}}>(optional)</span></div>
-                      <textarea className="note-area" rows={2}
+                      <textarea className="note-area" rows={3}
                         placeholder="Key points from their answer..."
                         value={currentNote} onChange={e=>setCurrentNote(e.target.value)}/>
                     </div>
