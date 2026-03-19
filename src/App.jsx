@@ -550,6 +550,58 @@ textarea.inp{resize:none;line-height:1.65;min-height:110px}
 .chevron{transition:transform .2s;font-size:12px;color:var(--sub)}
 .chevron.open{transform:rotate(90deg)}
 
+/* ── PROFILE DROPDOWN ── */
+.profile-wrap{position:relative}
+.profile-btn{
+  display:flex;align-items:center;gap:8px;
+  background:var(--ink3);border:1px solid var(--line2);
+  border-radius:8px;padding:5px 10px 5px 6px;
+  cursor:pointer;transition:.15s;
+}
+.profile-btn:hover{border-color:var(--hi)}
+.profile-avatar{
+  width:26px;height:26px;border-radius:6px;
+  background:linear-gradient(135deg,var(--hi),var(--hi2));
+  display:flex;align-items:center;justify-content:center;
+  font:700 11px var(--font);color:#000;flex-shrink:0;
+}
+.profile-email{font:500 11px var(--mono);color:var(--text);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.profile-chevron{font-size:9px;color:var(--sub);transition:.2s}
+.profile-dropdown{
+  position:absolute;top:calc(100% + 8px);right:0;
+  background:var(--ink2);border:1px solid var(--line2);
+  border-radius:10px;padding:8px;min-width:220px;
+  box-shadow:0 8px 32px rgba(0,0,0,.4);z-index:200;
+  animation:toastIn .15s ease;
+}
+.profile-info{padding:10px 10px 12px;border-bottom:1px solid var(--line)}
+.profile-name{font:700 14px var(--font);margin-bottom:3px}
+.profile-mail{font:400 11px var(--mono);color:var(--sub)}
+.profile-plan{
+  display:inline-block;margin-top:6px;
+  padding:2px 8px;border-radius:4px;
+  font:600 9px var(--mono);letter-spacing:1px;text-transform:uppercase;
+  background:rgba(56,189,248,.1);color:var(--hi);border:1px solid rgba(56,189,248,.2);
+}
+.profile-menu-item{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 10px;border-radius:7px;
+  font:500 12px var(--font);color:var(--text);
+  cursor:pointer;transition:.15s;margin-top:2px;
+}
+.profile-menu-item:hover{background:var(--ink3)}
+.profile-menu-item.danger{color:var(--rose)}
+.profile-menu-item.danger:hover{background:rgba(248,113,113,.08)}
+.profile-usage-bar{
+  margin:8px 10px 4px;padding:10px;
+  background:var(--ink3);border-radius:7px;
+  border:1px solid var(--line);
+}
+.pub-label{font:600 10px var(--mono);letter-spacing:1px;color:var(--sub);text-transform:uppercase;margin-bottom:6px}
+.pub-track{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-bottom:4px}
+.pub-fill{height:100%;border-radius:2px;transition:width .6s ease}
+.pub-nums{font:500 10px var(--mono);color:var(--sub)}
+
 /* ── ROLES PAGE ── */
 .roles-view{flex:1;overflow:auto;padding:24px;display:flex;flex-direction:column;gap:20px}
 .roles-head{display:flex;align-items:center;justify-content:space-between}
@@ -692,17 +744,32 @@ export default function HireIQPro({ session }) {
   const [roleForm, setRoleForm] = useState({title:"",seniority:"mid",job_description:""});
   const [roleSkills, setRoleSkills] = useState([...DEFAULT_SKILLS]);
   const [roleSkillInput, setRoleSkillInput] = useState("");
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [selectedPipelineCandidate, setSelectedPipelineCandidate] = useState(null);
+  const [pipelineResults, setPipelineResults] = useState({});
 
-  // Load user profile + usage
+  // Load user profile + recalculate limits on login
   useEffect(() => {
     if (!session) return;
     const loadProfile = async () => {
+      // Recalculate dynamic limits based on total users
+      const { count } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+      const totalUsers = count || 1;
+      const newLimit = Math.max(10, Math.floor(500 / totalUsers));
+
+      // Update this user's limit
+      await supabase.from('profiles')
+        .update({ analyses_limit: newLimit })
+        .eq('id', session.user.id);
+
       const { data } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .single();
-      if (data) setProfile(data);
+      if (data) setProfile({...data, analyses_limit: newLimit});
     };
     loadProfile();
   }, [session]);
@@ -1094,9 +1161,10 @@ Return EXACTLY this JSON:
 
   const saveCandidate = () => {
     if (!result || result.error) return;
-    const idx = candidates.findIndex(c=>c.name===form.candidate && c.role===form.role);
+    const candidateName = form.candidate || `Candidate ${candidates.length+1}`;
+    const idx = candidates.findIndex(c=>c.name===candidateName && c.role===form.role);
     const entry = {
-      name: form.candidate || `Candidate ${candidates.length+1}`,
+      name: candidateName,
       role: form.role,
       score: result.overallScore,
       verdict: result.verdict,
@@ -1108,6 +1176,8 @@ Return EXACTLY this JSON:
     };
     if (idx>=0) { const nc=[...candidates]; nc[idx]=entry; setCandidates(nc); }
     else setCandidates(c=>[...c, entry]);
+    // Store full result for pipeline view
+    setPipelineResults(prev => ({...prev, [`${candidateName}-${form.role}`]: result}));
     showToast(`✓ ${entry.name} saved to pipeline`);
   };
 
@@ -1154,18 +1224,51 @@ Return EXACTLY this JSON:
                 }}>
                   {isLimitReached() ? "⚠ Limit reached" : `${profile.analyses_used||0}/${profile.analyses_limit||10} analyses`}
                 </div>
-                <div style={{fontSize:11,color:"var(--sub)",fontFamily:"var(--mono)"}}>
-                  {session?.user?.email?.split("@")[0]}
+                <div className="profile-wrap">
+                  <div className="profile-btn" onClick={()=>setShowProfileMenu(m=>!m)}>
+                    <div className="profile-avatar">
+                      {(profile.full_name||session?.user?.email||"U")[0].toUpperCase()}
+                    </div>
+                    <div className="profile-email">
+                      {profile.full_name || session?.user?.email?.split("@")[0]}
+                    </div>
+                    <span className="profile-chevron">{showProfileMenu?"▲":"▼"}</span>
+                  </div>
+                  {showProfileMenu && (
+                    <div className="profile-dropdown" onClick={e=>e.stopPropagation()}>
+                      <div className="profile-info">
+                        <div className="profile-name">{profile.full_name || "Recruiter"}</div>
+                        <div className="profile-mail">{session?.user?.email}</div>
+                        <span className="profile-plan">{profile.plan||"free"} plan</span>
+                      </div>
+                      <div className="profile-usage-bar">
+                        <div className="pub-label">Monthly Usage</div>
+                        <div className="pub-track">
+                          <div className="pub-fill" style={{
+                            width:`${Math.min(100,((profile.analyses_used||0)/(profile.analyses_limit||10))*100)}%`,
+                            background: isLimitReached() ? "var(--rose)" : "var(--hi)"
+                          }}/>
+                        </div>
+                        <div className="pub-nums">{profile.analyses_used||0} / {profile.analyses_limit||10} analyses used</div>
+                      </div>
+                      <div className="profile-menu-item" onClick={()=>{setShowProfileMenu(false);setTab("pipeline");}}>
+                        📊 My Pipeline
+                      </div>
+                      <div className="profile-menu-item" onClick={()=>{setShowProfileMenu(false);setTab("roles");}}>
+                        📋 Open Roles
+                      </div>
+                      {isLimitReached() && (
+                        <div className="profile-menu-item" style={{color:"var(--green)",background:"rgba(52,211,153,.06)",border:"1px solid rgba(52,211,153,.15)",borderRadius:7,marginTop:4}}
+                          onClick={()=>window.open("mailto:hireiqpro@gmail.com?subject=Upgrade to Pro")}>
+                          ⚡ Upgrade to Pro
+                        </div>
+                      )}
+                      <div className="profile-menu-item danger" onClick={signOut}>
+                        → Sign Out
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <button onClick={signOut} style={{
-                  background:"none",border:"1px solid var(--line2)",
-                  borderRadius:6,padding:"4px 10px",
-                  color:"var(--sub)",fontFamily:"var(--mono)",fontSize:10,
-                  cursor:"pointer",letterSpacing:1,transition:".15s"
-                }}
-                onMouseOver={e=>e.target.style.color="var(--rose)"}
-                onMouseOut={e=>e.target.style.color="var(--sub)"}
-                >SIGN OUT</button>
               </div>
             )}
           </div>
@@ -1234,7 +1337,7 @@ Return EXACTLY this JSON:
 
                     <div style={{display:"flex",flexDirection:"column",gap:6}}>
                       <div style={{font:"600 11px var(--mono)",letterSpacing:1,textTransform:"uppercase",color:"var(--sub)"}}>Quick Note <span style={{fontWeight:400,color:"var(--dim)"}}>(optional)</span></div>
-                      <textarea className="note-area" rows={3}
+                      <textarea className="note-area" rows={2}
                         placeholder="Key points from their answer..."
                         value={currentNote} onChange={e=>setCurrentNote(e.target.value)}/>
                     </div>
@@ -1747,7 +1850,7 @@ Return EXACTLY this JSON:
                                 {[...roleCands].sort((a,b)=>b.score-a.score).map((c,i)=>{
                                   const vc = VERDICT_COLORS[c.verdict]||VERDICT_COLORS["Borderline"];
                                   return (
-                                    <tr key={i}>
+                                    <tr key={i} onClick={()=>setSelectedPipelineCandidate({...c, fullResult: pipelineResults[`${c.name}-${c.role}`]})} style={{cursor:"pointer"}}>
                                       <td>
                                         <div style={{display:"flex",alignItems:"center",gap:8}}>
                                           <span style={{fontSize:16}}>{AVATARS[c.avatarIdx||0]}</span>
@@ -1766,6 +1869,7 @@ Return EXACTLY this JSON:
                                       <td style={{fontSize:12,color:"var(--sub)",maxWidth:200}}>
                                         {c.summary?.slice(0,80)}{c.summary?.length>80?"…":""}
                                       </td>
+                                      <td style={{fontSize:11,color:"var(--hi)",fontFamily:"var(--mono)"}}>View →</td>
                                     </tr>
                                   );
                                 })}
@@ -1946,6 +2050,83 @@ Return EXACTLY this JSON:
               </div>
             </div>
           </div>
+        )}
+
+        {/* ── CANDIDATE DETAIL MODAL ── */}
+        {selectedPipelineCandidate && (
+          <div className="modal-overlay" onClick={()=>setSelectedPipelineCandidate(null)}>
+            <div className="modal" style={{maxWidth:640,maxHeight:"85vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
+                <div>
+                  <div style={{font:"700 18px var(--font)"}}>{selectedPipelineCandidate.name}</div>
+                  <div style={{font:"400 12px var(--mono)",color:"var(--sub)",marginTop:2}}>{selectedPipelineCandidate.role}</div>
+                </div>
+                <button className="modal-cancel" onClick={()=>setSelectedPipelineCandidate(null)} style={{padding:"6px 14px"}}>✕ Close</button>
+              </div>
+
+              {(() => {
+                const r = selectedPipelineCandidate.fullResult || selectedPipelineCandidate;
+                const vc = VERDICT_COLORS[selectedPipelineCandidate.verdict] || VERDICT_COLORS["Borderline"];
+                return (
+                  <>
+                    {/* Score */}
+                    <div style={{background:"var(--ink3)",border:"1px solid var(--line)",borderRadius:10,padding:"16px 20px",display:"flex",alignItems:"center",gap:16,marginBottom:14}}>
+                      <div className={`score-ring ${scoreClass(selectedPipelineCandidate.score)}`} style={{width:64,height:64,fontSize:22}}>
+                        {selectedPipelineCandidate.score}
+                        <span className="score-sub">/100</span>
+                      </div>
+                      <div style={{flex:1}}>
+                        <span className="verdict-chip" style={{background:vc.bg,border:`1px solid ${vc.border}`,color:vc.text,marginBottom:6,display:"inline-block"}}>
+                          {selectedPipelineCandidate.verdict}
+                        </span>
+                        <div style={{fontSize:12.5,color:"var(--sub)",lineHeight:1.6}}>{selectedPipelineCandidate.summary}</div>
+                      </div>
+                    </div>
+
+                    {/* Skill scores */}
+                    {selectedPipelineCandidate.skillScores && (
+                      <div style={{background:"var(--ink3)",border:"1px solid var(--line)",borderRadius:10,padding:"14px 18px",marginBottom:14}}>
+                        <div className="rlabel" style={{marginBottom:10}}>Competency Scores</div>
+                        <div className="bar-list">
+                          {Object.entries(selectedPipelineCandidate.skillScores).map(([k,v])=>(
+                            <div key={k} className="bar-item">
+                              <div className="bar-head"><span className="bar-name">{k}</span><span className="bar-val">{v}</span></div>
+                              <div className="bar-track"><div className="bar-fill" style={{width:`${v}%`,background:barColor(v)}}/></div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Full result if available */}
+                    {r?.strengths && (
+                      <>
+                        <div style={{background:"var(--ink3)",border:"1px solid var(--line)",borderRadius:10,padding:"14px 18px",marginBottom:10}}>
+                          <div className="rlabel" style={{marginBottom:8}}>Strengths</div>
+                          <ul className="blist">{r.strengths.map((s,i)=><li key={i}><span className="bl g"/>{s}</li>)}</ul>
+                        </div>
+                        <div style={{background:"var(--ink3)",border:"1px solid var(--line)",borderRadius:10,padding:"14px 18px",marginBottom:10}}>
+                          <div className="rlabel" style={{marginBottom:8}}>Concerns</div>
+                          <ul className="blist">{r.concerns?.map((c,i)=><li key={i}><span className="bl r"/>{c}</li>)}</ul>
+                        </div>
+                        {r.nextSteps && (
+                          <div style={{background:"var(--ink3)",border:"1px solid var(--line)",borderRadius:10,padding:"14px 18px",marginBottom:10}}>
+                            <div className="rlabel" style={{marginBottom:8}}>Next Steps</div>
+                            <ul className="blist">{r.nextSteps.map((s,i)=><li key={i}><span className="bl" style={{background:"var(--hi)"}}/>{s}</li>)}</ul>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        )}
+
+        {/* Close profile menu on outside click */}
+        {showProfileMenu && (
+          <div style={{position:"fixed",inset:0,zIndex:100}} onClick={()=>setShowProfileMenu(false)}/>
         )}
 
         {/* TOAST */}
