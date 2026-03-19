@@ -434,6 +434,84 @@ textarea.inp{resize:none;line-height:1.65;min-height:110px}
   border-radius:6px;padding:7px 10px;line-height:1.6;margin-top:2px;
 }
 .clarify-note strong{color:var(--sub)}
+
+/* ── ROLES PAGE ── */
+.roles-view{flex:1;overflow:auto;padding:24px;display:flex;flex-direction:column;gap:20px}
+.roles-head{display:flex;align-items:center;justify-content:space-between}
+.roles-title{font:700 13px var(--mono);letter-spacing:2px;text-transform:uppercase;color:var(--sub)}
+.new-role-btn{
+  padding:8px 18px;background:linear-gradient(135deg,var(--hi),var(--hi2));
+  border:none;border-radius:8px;color:#000;font:700 12px var(--font);
+  cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px;
+}
+.new-role-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(56,189,248,.2)}
+.roles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.role-card{
+  background:var(--ink2);border:1px solid var(--line);
+  border-radius:12px;overflow:hidden;transition:.2s;
+}
+.role-card:hover{border-color:var(--line2)}
+.role-card.archived{opacity:.5}
+.role-card-head{
+  padding:16px 18px;border-bottom:1px solid var(--line);
+  display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+}
+.role-card-title{font:700 15px var(--font)}
+.role-card-seniority{
+  font:600 9px var(--mono);letter-spacing:1px;text-transform:uppercase;
+  background:rgba(56,189,248,.1);color:var(--hi);
+  border:1px solid rgba(56,189,248,.2);padding:2px 8px;border-radius:4px;
+  white-space:nowrap;flex-shrink:0;
+}
+.role-card-body{padding:14px 18px;display:flex;flex-direction:column;gap:10px}
+.role-card-jd{font-size:12px;color:var(--sub);line-height:1.6;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.role-card-meta{display:flex;align-items:center;justify-content:space-between}
+.role-card-count{font:500 11px var(--mono);color:var(--sub)}
+.role-card-actions{display:flex;gap:6px}
+.role-action-btn{
+  padding:5px 12px;border-radius:6px;border:1px solid var(--line2);
+  background:none;font:600 10px var(--mono);cursor:pointer;transition:.15s;
+  letter-spacing:.5px;
+}
+.role-action-btn.primary{color:var(--hi);border-color:rgba(56,189,248,.3)}
+.role-action-btn.primary:hover{background:rgba(56,189,248,.1)}
+.role-action-btn.danger{color:var(--rose);border-color:rgba(248,113,113,.2)}
+.role-action-btn.danger:hover{background:rgba(248,113,113,.08)}
+.role-action-btn.edit{color:var(--sub)}
+.role-action-btn.edit:hover{color:var(--text);border-color:var(--line2)}
+.roles-empty{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:12px;color:var(--sub);text-align:center;
+  padding:60px 0;
+}
+.roles-section-label{
+  font:700 10px var(--mono);letter-spacing:2px;text-transform:uppercase;
+  color:var(--dim);margin-bottom:8px;
+}
+
+/* ── MODAL ── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);
+  display:flex;align-items:center;justify-content:center;
+  z-index:1000;padding:20px;
+}
+.modal{
+  background:var(--ink2);border:1px solid var(--line);
+  border-radius:14px;padding:28px;width:100%;max-width:500px;
+  display:flex;flex-direction:column;gap:16px;
+}
+.modal-title{font:700 17px var(--font)}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
+.modal-cancel{
+  padding:9px 18px;background:none;border:1px solid var(--line2);
+  border-radius:8px;color:var(--sub);font:600 13px var(--font);cursor:pointer;
+}
+.modal-cancel:hover{border-color:var(--text);color:var(--text)}
+.modal-save{
+  padding:9px 20px;background:linear-gradient(135deg,var(--hi),var(--hi2));
+  border:none;border-radius:8px;color:#000;font:700 13px var(--font);cursor:pointer;
+}
 `;
 
 /* ─── CONSTANTS ─────────────────────────────────────────────────────────── */
@@ -482,6 +560,10 @@ export default function HireIQPro({ session }) {
   const [recording, setRecording] = useState(false);
   const recognitionRef = useRef(null);
   const [profile, setProfile] = useState(null);
+  const [roles, setRoles] = useState([]);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [editingRole, setEditingRole] = useState(null);
+  const [roleForm, setRoleForm] = useState({title:"",seniority:"mid",job_description:""});
 
   // Load user profile + usage
   useEffect(() => {
@@ -499,6 +581,56 @@ export default function HireIQPro({ session }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+  };
+
+  // Load roles
+  useEffect(() => {
+    if (!session) return;
+    const loadRoles = async () => {
+      const { data } = await supabase
+        .from('roles')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
+      if (data) setRoles(data);
+    };
+    loadRoles();
+  }, [session]);
+
+  const saveRole = async () => {
+    if (!roleForm.title.trim()) return;
+    if (editingRole) {
+      const { data } = await supabase.from('roles').update({
+        title: roleForm.title,
+        seniority: roleForm.seniority,
+        job_description: roleForm.job_description,
+      }).eq('id', editingRole.id).select().single();
+      if (data) setRoles(r => r.map(x => x.id === data.id ? data : x));
+    } else {
+      const { data } = await supabase.from('roles').insert({
+        user_id: session.user.id,
+        title: roleForm.title,
+        seniority: roleForm.seniority,
+        job_description: roleForm.job_description,
+      }).select().single();
+      if (data) setRoles(r => [data, ...r]);
+    }
+    setShowRoleModal(false);
+    setEditingRole(null);
+    setRoleForm({title:"",seniority:"mid",job_description:""});
+    showToast("✓ Role saved");
+  };
+
+  const archiveRole = async (id) => {
+    await supabase.from('roles').update({ status: 'archived' }).eq('id', id);
+    setRoles(r => r.map(x => x.id === id ? {...x, status:'archived'} : x));
+    showToast("Role archived");
+  };
+
+  const selectRole = (role) => {
+    setForm(f => ({ ...f, role: role.title, seniority: role.seniority, jd: role.job_description || "" }));
+    setTab("analyze");
+    showToast(`✓ Role "${role.title}" loaded — add candidate details`);
   };
 
   const incrementUsage = async () => {
@@ -616,6 +748,13 @@ Return EXACTLY this JSON:
       if (data.error) throw new Error(data.error);
       setResult(data);
       await incrementUsage();
+      // Increment role candidate count if a role is loaded
+      const matchedRole = roles.find(r => r.title === form.role && r.status === 'active');
+      if (matchedRole) {
+        const newCount = (matchedRole.candidates_count || 0) + 1;
+        await supabase.from('roles').update({ candidates_count: newCount }).eq('id', matchedRole.id);
+        setRoles(r => r.map(x => x.id === matchedRole.id ? {...x, candidates_count: newCount} : x));
+      }
     } catch(e) {
       setResult({error:true});
     }
@@ -658,6 +797,7 @@ Return EXACTLY this JSON:
           <div className="nav-brand">Hire<em>IQ</em> <span style={{fontWeight:300,fontSize:12,color:"var(--sub)"}}>Pro</span></div>
           <div className="nav-tabs">
             {[
+              {id:"roles",   label:"Open Roles", icon:"📋"},
               {id:"analyze", label:"Analyze Interview", icon:"⚡"},
               {id:"compare", label:"Compare Candidates", icon:"⚖️"},
               {id:"pipeline",label:"Pipeline", icon:"📊"},
@@ -1183,6 +1323,140 @@ Return EXACTLY this JSON:
             )}
           </div>
         </div>
+
+        {/* ── ROLES VIEW ── */}
+        <div style={{display:tab==="roles"?"flex":"none",flexDirection:"column",overflow:"hidden",flex:1}}>
+          <div className="roles-view">
+            <div className="roles-head">
+              <span className="roles-title">Open Roles</span>
+              <button className="new-role-btn" onClick={()=>{setRoleForm({title:"",seniority:"mid",job_description:""});setEditingRole(null);setShowRoleModal(true);}}>
+                + New Role
+              </button>
+            </div>
+
+            {roles.filter(r=>r.status==="active").length === 0 && roles.filter(r=>r.status==="archived").length === 0 ? (
+              <div className="roles-empty">
+                <div style={{fontSize:44,opacity:.2}}>📋</div>
+                <div style={{font:"700 16px var(--font)",opacity:.2}}>No Roles Yet</div>
+                <div style={{fontSize:12,maxWidth:240,lineHeight:1.6,opacity:.5}}>
+                  Create a role once and reuse it for every candidate you interview for that position
+                </div>
+                <button className="new-role-btn" style={{marginTop:8}} onClick={()=>{setRoleForm({title:"",seniority:"mid",job_description:""});setEditingRole(null);setShowRoleModal(true);}}>
+                  + Create First Role
+                </button>
+              </div>
+            ) : (
+              <>
+                {roles.filter(r=>r.status==="active").length > 0 && (
+                  <>
+                    <div className="roles-section-label">Active ({roles.filter(r=>r.status==="active").length})</div>
+                    <div className="roles-grid">
+                      {roles.filter(r=>r.status==="active").map(role=>(
+                        <div key={role.id} className="role-card">
+                          <div className="role-card-head">
+                            <div>
+                              <div className="role-card-title">{role.title}</div>
+                            </div>
+                            <div className="role-card-seniority">{role.seniority}</div>
+                          </div>
+                          <div className="role-card-body">
+                            {role.job_description ? (
+                              <div className="role-card-jd">{role.job_description}</div>
+                            ) : (
+                              <div style={{fontSize:12,color:"var(--dim)",fontStyle:"italic"}}>No job description added</div>
+                            )}
+                            <div className="role-card-meta">
+                              <div className="role-card-count">
+                                {role.candidates_count||0} candidate{(role.candidates_count||0)!==1?"s":""} analyzed
+                              </div>
+                              <div className="role-card-actions">
+                                <button className="role-action-btn edit" onClick={()=>{setEditingRole(role);setRoleForm({title:role.title,seniority:role.seniority,job_description:role.job_description||""});setShowRoleModal(true);}}>
+                                  Edit
+                                </button>
+                                <button className="role-action-btn danger" onClick={()=>archiveRole(role.id)}>
+                                  Archive
+                                </button>
+                                <button className="role-action-btn primary" onClick={()=>selectRole(role)}>
+                                  ⚡ Analyze
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {roles.filter(r=>r.status==="archived").length > 0 && (
+                  <>
+                    <div className="roles-section-label" style={{marginTop:16}}>Archived ({roles.filter(r=>r.status==="archived").length})</div>
+                    <div className="roles-grid">
+                      {roles.filter(r=>r.status==="archived").map(role=>(
+                        <div key={role.id} className="role-card archived">
+                          <div className="role-card-head">
+                            <div className="role-card-title">{role.title}</div>
+                            <div className="role-card-seniority" style={{opacity:.5}}>{role.seniority}</div>
+                          </div>
+                          <div className="role-card-body">
+                            <div className="role-card-meta">
+                              <div className="role-card-count">{role.candidates_count||0} candidates analyzed</div>
+                              <button className="role-action-btn edit" onClick={async()=>{
+                                await supabase.from('roles').update({status:'active'}).eq('id',role.id);
+                                setRoles(r=>r.map(x=>x.id===role.id?{...x,status:'active'}:x));
+                                showToast("Role restored");
+                              }}>Restore</button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* ── ROLE MODAL ── */}
+        {showRoleModal && (
+          <div className="modal-overlay" onClick={e=>{if(e.target===e.currentTarget){setShowRoleModal(false);setEditingRole(null);}}}>
+            <div className="modal">
+              <div className="modal-title">{editingRole ? "Edit Role" : "New Role"}</div>
+
+              <div className="field">
+                <label className="label">Job Title</label>
+                <input className="inp" placeholder="e.g. Senior Frontend Engineer"
+                  value={roleForm.title} onChange={e=>setRoleForm(f=>({...f,title:e.target.value}))}/>
+              </div>
+
+              <div className="field">
+                <label className="label">Seniority</label>
+                <select className="sel inp" value={roleForm.seniority} onChange={e=>setRoleForm(f=>({...f,seniority:e.target.value}))}>
+                  <option value="junior">Junior</option>
+                  <option value="mid">Mid-level</option>
+                  <option value="senior">Senior</option>
+                  <option value="lead">Lead / Staff</option>
+                  <option value="exec">Executive</option>
+                </select>
+              </div>
+
+              <div className="field">
+                <label className="label">Job Description <span style={{fontWeight:400,color:"var(--dim)"}}>— saves once, reused for all candidates</span></label>
+                <textarea className="inp" style={{minHeight:120}}
+                  placeholder="Paste the full job description here. This will be used to score every candidate's fit for this role automatically."
+                  value={roleForm.job_description} onChange={e=>setRoleForm(f=>({...f,job_description:e.target.value}))}/>
+              </div>
+
+              <div className="modal-actions">
+                <button className="modal-cancel" onClick={()=>{setShowRoleModal(false);setEditingRole(null);}}>Cancel</button>
+                <button className="modal-save" onClick={saveRole}>
+                  {editingRole ? "Save Changes" : "Create Role"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* TOAST */}
         {toast && <div className="toast">✓ {toast}</div>}
