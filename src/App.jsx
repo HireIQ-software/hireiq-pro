@@ -561,9 +561,12 @@ export default function HireIQPro({ session }) {
   const recognitionRef = useRef(null);
   const [profile, setProfile] = useState(null);
   const [roles, setRoles] = useState([]);
+  const [selectedRole, setSelectedRole] = useState(null);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
   const [roleForm, setRoleForm] = useState({title:"",seniority:"mid",job_description:""});
+  const [roleSkills, setRoleSkills] = useState([...DEFAULT_SKILLS]);
+  const [roleSkillInput, setRoleSkillInput] = useState("");
 
   // Load user profile + usage
   useEffect(() => {
@@ -597,6 +600,18 @@ export default function HireIQPro({ session }) {
     loadRoles();
   }, [session]);
 
+  const autoDetectRoleSkills = (title, seniority) => {
+    const t = title.toLowerCase();
+    const preset = t.includes('engineer')||t.includes('developer')||t.includes('tech') ? 'engineering'
+      : t.includes('design') ? 'design'
+      : t.includes('sales') ? 'sales'
+      : t.includes('market') ? 'marketing'
+      : t.includes('manag')||t.includes('director')||t.includes('head') ? 'management'
+      : t.includes('data')||t.includes('analyst') ? 'data'
+      : 'custom';
+    setRoleSkills([...ROLE_SKILL_PRESETS[preset]]);
+  };
+
   const saveRole = async () => {
     if (!roleForm.title.trim()) return;
     if (editingRole) {
@@ -604,6 +619,7 @@ export default function HireIQPro({ session }) {
         title: roleForm.title,
         seniority: roleForm.seniority,
         job_description: roleForm.job_description,
+        skills: roleSkills,
       }).eq('id', editingRole.id).select().single();
       if (data) setRoles(r => r.map(x => x.id === data.id ? data : x));
     } else {
@@ -612,12 +628,14 @@ export default function HireIQPro({ session }) {
         title: roleForm.title,
         seniority: roleForm.seniority,
         job_description: roleForm.job_description,
+        skills: roleSkills,
       }).select().single();
       if (data) setRoles(r => [data, ...r]);
     }
     setShowRoleModal(false);
     setEditingRole(null);
     setRoleForm({title:"",seniority:"mid",job_description:""});
+    setRoleSkills([...DEFAULT_SKILLS]);
     showToast("✓ Role saved");
   };
 
@@ -628,9 +646,27 @@ export default function HireIQPro({ session }) {
   };
 
   const selectRole = (role) => {
-    setForm(f => ({ ...f, role: role.title, seniority: role.seniority, jd: role.job_description || "" }));
+    setSelectedRole(role);
+    setForm(f => ({ ...f, role: role.title, seniority: role.seniority, jd: role.job_description || "", candidate: "", notes: "" }));
+    // Load role skills if saved, else use preset based on title
+    if (role.skills && role.skills.length > 0) {
+      setSkillsList(role.skills);
+      setSkills(Object.fromEntries(role.skills.map(s=>[s,0])));
+    } else {
+      // Auto-detect preset from role title
+      const t = role.title.toLowerCase();
+      const preset = t.includes('engineer')||t.includes('developer')||t.includes('tech') ? 'engineering'
+        : t.includes('design') ? 'design'
+        : t.includes('sales') ? 'sales'
+        : t.includes('market') ? 'marketing'
+        : t.includes('manag')||t.includes('director')||t.includes('head') ? 'management'
+        : t.includes('data')||t.includes('analyst') ? 'data'
+        : 'custom';
+      applyPreset(preset);
+    }
+    setResult(null);
     setTab("analyze");
-    showToast(`✓ Role "${role.title}" loaded — add candidate details`);
+    showToast(`✓ "${role.title}" loaded — add candidate details`);
   };
 
   const incrementUsage = async () => {
@@ -846,98 +882,91 @@ Return EXACTLY this JSON:
 
             {/* LEFT */}
             <div className="left-col">
-              <div className="phead">
-                <span className="phead-title">Interview Input</span>
-                <button className="phead-action" onClick={()=>{setForm({role:"",jd:"",candidate:"",notes:"",seniority:"mid"});setSkillsList([...DEFAULT_SKILLS]);setSkills(Object.fromEntries(DEFAULT_SKILLS.map(s=>[s,0])));setActivePreset("custom");setResult(null);}}>↺ Reset</button>
-              </div>
-              <div className="form-scroll">
-
-                <div className="row2">
-                  <div className="field">
-                    <label className="label">Role</label>
-                    <input className="inp" placeholder="e.g. Sr. Engineer" value={form.role} onChange={e=>setForm(f=>({...f,role:e.target.value}))}/>
+              {!selectedRole ? (
+                // No role selected — force recruiter to pick one
+                <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,padding:32,textAlign:"center"}}>
+                  <div style={{fontSize:44,opacity:.3}}>📋</div>
+                  <div style={{font:"700 17px var(--font)",opacity:.4}}>No Role Selected</div>
+                  <div style={{fontSize:12,color:"var(--sub)",maxWidth:220,lineHeight:1.7}}>
+                    Go to Open Roles, select a role and click Analyze to start scoring candidates
                   </div>
-                  <div className="field">
-                    <label className="label">Seniority</label>
-                    <select className="sel inp" value={form.seniority} onChange={e=>setForm(f=>({...f,seniority:e.target.value}))}>
-                      <option value="junior">Junior</option>
-                      <option value="mid">Mid-level</option>
-                      <option value="senior">Senior</option>
-                      <option value="lead">Lead / Staff</option>
-                      <option value="exec">Executive</option>
-                    </select>
-                  </div>
+                  <button className="new-role-btn" onClick={()=>setTab("roles")}>
+                    📋 Go to Open Roles
+                  </button>
                 </div>
-
-                <div className="field">
-                  <label className="label">Candidate Name</label>
-                  <input className="inp" placeholder="e.g. Alex Chen" value={form.candidate} onChange={e=>setForm(f=>({...f,candidate:e.target.value}))}/>
-                </div>
-
-                <div className="field">
-                  <label className="label">Job Description <span style={{color:"var(--dim)",fontWeight:400}}>(optional — enables JD match score)</span></label>
-                  <textarea className="inp" placeholder="Paste the job description here for a fit % score..." style={{minHeight:70}} value={form.jd} onChange={e=>setForm(f=>({...f,jd:e.target.value}))}/>
-                </div>
-
-                <div className="field">
-                  <label className="label">Skills to Evaluate
-                    <span style={{fontWeight:400,color:"var(--dim)",marginLeft:6}}>— your gut rating (AI scores independently)</span>
-                  </label>
-                  <div className="clarify-note">
-                    <strong>Dots = your gut feeling (1–5).</strong> The AI generates its own objective score from your notes. Both are shown side-by-side in results.
-                  </div>
-                  <div className="skills-preset-row" style={{marginTop:8}}>
-                    {Object.keys(ROLE_SKILL_PRESETS).map(p=>(
-                      <button key={p} className={`preset-btn ${activePreset===p?"active":""}`} onClick={()=>applyPreset(p)}>
-                        {p}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="skill-tags">
-                    {skillsList.map(name=>(
-                      <div key={name} className="skill-tag">
-                        <span>{name}</span>
-                        <div className="skill-tag-dots">
-                          {[1,2,3,4,5].map(i=>(
-                            <div key={i} className={`d ${i<=(skills[name]||0)?`on-${skills[name]||0}`:""}`}
-                              onClick={()=>setSkill(name,i)}/>
-                          ))}
-                        </div>
-                        <button className="skill-tag-remove" onClick={()=>removeSkill(name)} title="Remove skill">×</button>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="add-skill-row">
-                    <input
-                      className="add-skill-inp"
-                      placeholder="Add custom skill (e.g. Negotiation)..."
-                      value={newSkillInput}
-                      onChange={e=>setNewSkillInput(e.target.value)}
-                      onKeyDown={e=>e.key==="Enter"&&addSkill()}
-                    />
-                    <button className="add-skill-btn" onClick={addSkill}>+ Add</button>
-                  </div>
-                </div>
-
-                <div className="field">
-                  <label className="label">Interview Notes</label>
-                  <div className="mic-row">
-                    <div style={{flex:1}}>
-                      <textarea className="inp" style={{minHeight:130}}
-                        placeholder="Paste notes or use 🎤 to speak them. Include candidate responses, observations, red flags, highlights..."
-                        value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))}/>
+              ) : (
+                <>
+                  <div className="phead">
+                    <div style={{display:"flex",flexDirection:"column",gap:2}}>
+                      <span className="phead-title">Interview Input</span>
+                      <span style={{fontSize:11,color:"var(--hi)",fontFamily:"var(--mono)"}}>
+                        {selectedRole.title} · {selectedRole.seniority}
+                      </span>
                     </div>
-                    <button className={`mic-btn ${recording?"recording":""}`} onClick={toggleMic} title={recording?"Stop recording":"Start voice input"}>
-                      {recording?"⏹":"🎤"}
-                    </button>
+                    <button className="phead-action" onClick={()=>{
+                      setSelectedRole(null);
+                      setForm({role:"",jd:"",candidate:"",notes:"",seniority:"mid"});
+                      setSkillsList([...DEFAULT_SKILLS]);
+                      setSkills(Object.fromEntries(DEFAULT_SKILLS.map(s=>[s,0])));
+                      setResult(null);
+                    }}>↺ Change Role</button>
                   </div>
-                  {recording && <div style={{font:"500 10px var(--mono)",color:"var(--rose)",letterSpacing:1}}>● RECORDING — speak your notes</div>}
-                </div>
+                  <div className="form-scroll">
 
-              </div>
-              <button className="analyze-btn" onClick={analyze} disabled={loading||!form.notes.trim()||!form.role.trim()}>
-                {loading ? "⟳ Analyzing..." : "⚡ Generate Full Scorecard"}
-              </button>
+                    <div className="field">
+                      <label className="label">Candidate Name</label>
+                      <input className="inp" placeholder="e.g. Alex Chen" value={form.candidate} onChange={e=>setForm(f=>({...f,candidate:e.target.value}))}/>
+                    </div>
+
+                    <div className="field">
+                      <label className="label">Skills to Evaluate</label>
+                      <div className="skill-tags">
+                        {skillsList.map(name=>(
+                          <div key={name} className="skill-tag">
+                            <span>{name}</span>
+                            <div className="skill-tag-dots">
+                              {[1,2,3,4,5].map(i=>(
+                                <div key={i} className={`d ${i<=(skills[name]||0)?`on-${skills[name]||0}`:""}`}
+                                  onClick={()=>setSkill(name,i)}/>
+                              ))}
+                            </div>
+                            <button className="skill-tag-remove" onClick={()=>removeSkill(name)} title="Remove skill">×</button>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="add-skill-row">
+                        <input
+                          className="add-skill-inp"
+                          placeholder="Add skill..."
+                          value={newSkillInput}
+                          onChange={e=>setNewSkillInput(e.target.value)}
+                          onKeyDown={e=>e.key==="Enter"&&addSkill()}
+                        />
+                        <button className="add-skill-btn" onClick={addSkill}>+ Add</button>
+                      </div>
+                    </div>
+
+                    <div className="field">
+                      <label className="label">Interview Notes</label>
+                      <div className="mic-row">
+                        <div style={{flex:1}}>
+                          <textarea className="inp" style={{minHeight:200}}
+                            placeholder="Paste notes or use 🎤 to speak them. Include candidate responses, observations, red flags, highlights..."
+                            value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))}/>
+                        </div>
+                        <button className={`mic-btn ${recording?"recording":""}`} onClick={toggleMic} title={recording?"Stop recording":"Start voice input"}>
+                          {recording?"⏹":"🎤"}
+                        </button>
+                      </div>
+                      {recording && <div style={{font:"500 10px var(--mono)",color:"var(--rose)",letterSpacing:1}}>● RECORDING — speak your notes</div>}
+                    </div>
+
+                  </div>
+                  <button className="analyze-btn" onClick={analyze} disabled={loading||!form.notes.trim()}>
+                    {loading ? "⟳ Analyzing..." : "⚡ Generate Scorecard"}
+                  </button>
+                </>
+              )}
             </div>
 
             {/* RIGHT */}
@@ -1427,7 +1456,11 @@ Return EXACTLY this JSON:
               <div className="field">
                 <label className="label">Job Title</label>
                 <input className="inp" placeholder="e.g. Senior Frontend Engineer"
-                  value={roleForm.title} onChange={e=>setRoleForm(f=>({...f,title:e.target.value}))}/>
+                  value={roleForm.title}
+                  onChange={e=>{
+                    setRoleForm(f=>({...f,title:e.target.value}));
+                    if(e.target.value.length > 3) autoDetectRoleSkills(e.target.value, roleForm.seniority);
+                  }}/>
               </div>
 
               <div className="field">
@@ -1443,9 +1476,37 @@ Return EXACTLY this JSON:
 
               <div className="field">
                 <label className="label">Job Description <span style={{fontWeight:400,color:"var(--dim)"}}>— saves once, reused for all candidates</span></label>
-                <textarea className="inp" style={{minHeight:120}}
-                  placeholder="Paste the full job description here. This will be used to score every candidate's fit for this role automatically."
+                <textarea className="inp" style={{minHeight:100}}
+                  placeholder="Paste the full job description here..."
                   value={roleForm.job_description} onChange={e=>setRoleForm(f=>({...f,job_description:e.target.value}))}/>
+              </div>
+
+              <div className="field">
+                <label className="label">Skills to Evaluate <span style={{fontWeight:400,color:"var(--dim)"}}>— auto-detected, edit freely</span></label>
+                <div className="skill-tags" style={{marginBottom:8}}>
+                  {roleSkills.map(name=>(
+                    <div key={name} className="skill-tag">
+                      <span>{name}</span>
+                      <button className="skill-tag-remove" onClick={()=>setRoleSkills(s=>s.filter(x=>x!==name))}>×</button>
+                    </div>
+                  ))}
+                </div>
+                <div className="add-skill-row">
+                  <input className="add-skill-inp" placeholder="Add skill..."
+                    value={roleSkillInput} onChange={e=>setRoleSkillInput(e.target.value)}
+                    onKeyDown={e=>{
+                      if(e.key==="Enter" && roleSkillInput.trim() && !roleSkills.includes(roleSkillInput.trim())){
+                        setRoleSkills(s=>[...s,roleSkillInput.trim()]);
+                        setRoleSkillInput("");
+                      }
+                    }}/>
+                  <button className="add-skill-btn" onClick={()=>{
+                    if(roleSkillInput.trim() && !roleSkills.includes(roleSkillInput.trim())){
+                      setRoleSkills(s=>[...s,roleSkillInput.trim()]);
+                      setRoleSkillInput("");
+                    }
+                  }}>+ Add</button>
+                </div>
               </div>
 
               <div className="modal-actions">
