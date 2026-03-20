@@ -915,6 +915,57 @@ textarea.inp{resize:none;line-height:1.65;min-height:110px}
   border:none;border-radius:8px;color:#000;font:700 13px var(--font);cursor:pointer;
 }
 `;
+/* ── PHASE 3: TEAM + REFERRAL + BIAS + NOTIFICATIONS ── */
+
+/* Team */
+.team-view{flex:1;overflow:auto;padding:24px;display:flex;flex-direction:column;gap:20px}
+.team-head{display:flex;align-items:center;justify-content:space-between}
+.team-section{background:var(--ink2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.team-section-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.team-section-title{font:700 14px var(--font)}
+.member-row{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--line)}
+.member-row:last-child{border-bottom:none}
+.member-avatar{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--hi2),var(--violet));display:flex;align-items:center;justify-content:center;font:700 14px var(--font);color:#fff;flex-shrink:0}
+.member-info{flex:1}
+.member-name{font:600 13px var(--font)}
+.member-email{font:400 11px var(--mono);color:var(--sub);margin-top:1px}
+.member-role-badge{font:600 9px var(--mono);letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:4px;background:rgba(56,189,248,.1);color:var(--hi);border:1px solid rgba(56,189,248,.2)}
+.invite-row{display:flex;gap:8px;padding:14px 20px}
+
+/* Referral */
+.referral-card{background:linear-gradient(135deg,rgba(56,189,248,.08),rgba(129,140,248,.08));border:1px solid rgba(56,189,248,.2);border-radius:12px;padding:20px 24px}
+.referral-link-box{background:var(--ink3);border:1px solid var(--line2);border-radius:8px;padding:10px 14px;font:500 12px var(--mono);color:var(--hi);display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0;word-break:break-all}
+.referral-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}
+.referral-stat{background:var(--ink3);border:1px solid var(--line);border-radius:8px;padding:12px 14px;text-align:center}
+.referral-stat-val{font:900 20px var(--font);color:var(--hi)}
+.referral-stat-label{font:500 10px var(--mono);color:var(--sub);letter-spacing:.5px;text-transform:uppercase;margin-top:2px}
+
+/* Bias Report */
+.bias-report-view{flex:1;overflow:auto;padding:24px;display:flex;flex-direction:column;gap:20px}
+.bias-chart-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.bias-card{background:var(--ink2);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+.bias-card-title{font:700 13px var(--font);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.bias-bar-item{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.bias-bar-label{font-size:12px;color:var(--text);width:120px;flex-shrink:0}
+.bias-bar-track{flex:1;height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bias-bar-fill{height:100%;border-radius:3px;transition:width .8s ease}
+.bias-bar-val{font:600 11px var(--mono);color:var(--sub);width:32px;text-align:right;flex-shrink:0}
+.bias-insight{background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:12px 14px;font-size:12.5px;color:var(--amber);line-height:1.6;display:flex;gap:10px}
+.bias-ok{background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.2);border-radius:8px;padding:12px 14px;font-size:12.5px;color:var(--green);line-height:1.6;display:flex;gap:10px}
+
+/* Notifications */
+.notif-section{background:var(--ink2);border:1px solid var(--line);border-radius:12px;padding:20px 24px}
+.notif-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line)}
+.notif-toggle-row:last-child{border-bottom:none}
+.notif-toggle-info{flex:1}
+.notif-toggle-title{font:600 13px var(--font)}
+.notif-toggle-sub{font:400 11px var(--font);color:var(--sub);margin-top:2px}
+.toggle-switch{width:40px;height:22px;background:var(--line2);border-radius:11px;position:relative;cursor:pointer;transition:.2s;flex-shrink:0;border:none}
+.toggle-switch.on{background:var(--hi)}
+.toggle-knob{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s}
+.toggle-switch.on .toggle-knob{left:21px}
+.webhook-test-btn{padding:6px 12px;background:none;border:1px solid var(--line2);border-radius:6px;color:var(--sub);font:600 10px var(--mono);cursor:pointer;transition:.15s;white-space:nowrap}
+.webhook-test-btn:hover{border-color:var(--green);color:var(--green)}
 
 /* ─── CONSTANTS ─────────────────────────────────────────────────────────── */
 const DEFAULT_SKILLS = ["Communication","Technical","Problem Solving","Culture Fit","Leadership","Adaptability"];
@@ -1036,6 +1087,21 @@ export default function HireIQPro({ session }) {
   const [pipelineSearch, setPipelineSearch] = useState("");
   const [confirmDialog, setConfirmDialog] = useState(null);
   const [dbCandidates, setDbCandidates] = useState([]);
+  // Phase 3
+  const [team, setTeam] = useState(null);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [teamName, setTeamName] = useState("");
+  const [notifyEmail, setNotifyEmail] = useState("");
+  const [notifySlack, setNotifySlack] = useState("");
+  const [notifyOnAnalysis, setNotifyOnAnalysis] = useState(false);
+  const [notifySaved, setNotifySaved] = useState(false);
+  const [biasReport, setBiasReport] = useState(null);
+  const [generatingBias, setGeneratingBias] = useState(false);
+  const [referralCode, setReferralCode] = useState("");
+  const [referralCount, setReferralCount] = useState(0);
+  const [referralBonus, setReferralBonus] = useState(0);
+  const [copiedReferral, setCopiedReferral] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [templateSearch, setTemplateSearch] = useState("");
 
@@ -1157,6 +1223,10 @@ export default function HireIQPro({ session }) {
     loadStatuses();
     loadBranding();
     loadPipelineCandidates();
+    // Load Phase 3 data
+    loadTeam();
+    loadReferral();
+    loadNotifSettings();
     // Show onboarding for new users
     const hasSeenOnboarding = localStorage.getItem('hireiq_onboarded');
     if (!hasSeenOnboarding) {
@@ -1421,6 +1491,185 @@ ${emailBranding.email_signature}` : ""}`);
   ];
 
   const getNoteType = (id) => NOTE_TYPES.find(t => t.id === id) || NOTE_TYPES[0];
+
+  /* ── PHASE 3 FUNCTIONS ── */
+
+  // Team
+  const loadTeam = async () => {
+    const { data: membership } = await supabase
+      .from('team_members').select('team_id').eq('user_id', session.user.id).single();
+    if (membership) {
+      const { data: teamData } = await supabase
+        .from('teams').select('*').eq('id', membership.team_id).single();
+      if (teamData) setTeam(teamData);
+      const { data: members } = await supabase
+        .from('team_members')
+        .select('*, profiles(full_name, email, plan)')
+        .eq('team_id', membership.team_id);
+      if (members) setTeamMembers(members);
+    }
+  };
+
+  const createTeam = async () => {
+    if (!teamName.trim()) return;
+    const { data } = await supabase.from('teams').insert({
+      name: teamName, owner_id: session.user.id
+    }).select().single();
+    if (data) {
+      await supabase.from('team_members').insert({
+        team_id: data.id, user_id: session.user.id, role: 'owner'
+      });
+      await supabase.from('profiles').update({ team_id: data.id }).eq('id', session.user.id);
+      setTeam(data);
+      setTeamMembers([{ user_id: session.user.id, role: 'owner', profiles: { full_name: profile?.full_name, email: session.user.email } }]);
+      setTeamName("");
+      showToast("✓ Team created!");
+    }
+  };
+
+  const inviteMember = async () => {
+    if (!inviteEmail.trim() || !team) return;
+    const { data } = await supabase.from('team_invites').insert({
+      team_id: team.id,
+      invited_email: inviteEmail.trim(),
+      invited_by: session.user.id,
+    }).select().single();
+    if (data) {
+      showToast(`✓ Invite sent to ${inviteEmail}`);
+      setInviteEmail("");
+    }
+  };
+
+  const removeMember = async (userId) => {
+    if (!team || userId === session.user.id) return;
+    await supabase.from('team_members').delete()
+      .eq('team_id', team.id).eq('user_id', userId);
+    setTeamMembers(m => m.filter(x => x.user_id !== userId));
+    showToast("Member removed");
+  };
+
+  // Referral
+  const loadReferral = async () => {
+    const { data } = await supabase
+      .from('profiles').select('referral_code,referral_count')
+      .eq('id', session.user.id).single();
+    if (data) {
+      setReferralCode(data.referral_code || "");
+      setReferralCount(data.referral_count || 0);
+      setReferralBonus((data.referral_count || 0) * 50);
+    }
+  };
+
+  const copyReferralLink = () => {
+    const link = `${window.location.origin}?ref=${referralCode}`;
+    navigator.clipboard.writeText(link);
+    setCopiedReferral(true);
+    setTimeout(() => setCopiedReferral(false), 2000);
+  };
+
+  // Notifications
+  const loadNotifSettings = async () => {
+    const { data } = await supabase
+      .from('profiles').select('notify_email,notify_slack_webhook')
+      .eq('id', session.user.id).single();
+    if (data) {
+      setNotifyEmail(data.notify_email || "");
+      setNotifySlack(data.notify_slack_webhook || "");
+      setNotifyOnAnalysis(!!(data.notify_email || data.notify_slack_webhook));
+    }
+  };
+
+  const saveNotifSettings = async () => {
+    await supabase.from('profiles').update({
+      notify_email: notifyEmail,
+      notify_slack_webhook: notifySlack,
+    }).eq('id', session.user.id);
+    setNotifySaved(true);
+    setTimeout(() => setNotifySaved(false), 2000);
+    showToast("✓ Notification settings saved");
+  };
+
+  const sendNotification = async (candidateName, scorecard) => {
+    if (!notifyEmail && !notifySlack) return;
+    const summary = `HireIQ Scorecard: ${candidateName} — ${scorecard.verdict} (${scorecard.overallScore}/100)
+
+${scorecard.summary}`;
+    // Email notification via mailto (opens client)
+    if (notifyEmail) {
+      const subject = encodeURIComponent(`HireIQ: ${candidateName} scored ${scorecard.overallScore}/100 — ${scorecard.verdict}`);
+      const body = encodeURIComponent(summary);
+      window.open(`mailto:${notifyEmail}?subject=${subject}&body=${body}`);
+    }
+    // Slack webhook
+    if (notifySlack) {
+      try {
+        await fetch(notifySlack, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: `*HireIQ Scorecard Ready* 🎯
+*Candidate:* ${candidateName}
+*Role:* ${selectedRole?.title}
+*Score:* ${scorecard.overallScore}/100
+*Verdict:* ${scorecard.verdict}
+
+${scorecard.summary}`
+          })
+        });
+      } catch(e) { console.error('Slack notif failed:', e); }
+    }
+  };
+
+  const testSlackWebhook = async () => {
+    if (!notifySlack) { showToast("⚠ Enter a Slack webhook URL first"); return; }
+    try {
+      await fetch(notifySlack, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: "✅ HireIQ test notification — your webhook is working!" })
+      });
+      showToast("✓ Test sent to Slack!");
+    } catch(e) { showToast("⚠ Webhook test failed — check the URL"); }
+  };
+
+  // Bias Report
+  const generateBiasReport = async () => {
+    if (candidates.length < 3) { showToast("⚠ Need at least 3 candidates to generate a bias report"); return; }
+    setGeneratingBias(true);
+
+    const verdictCounts = {};
+    const skillAvgs = {};
+    const biasFlags = [];
+    let totalScore = 0;
+
+    candidates.forEach(c => {
+      verdictCounts[c.verdict] = (verdictCounts[c.verdict] || 0) + 1;
+      totalScore += c.score || 0;
+      Object.entries(c.skillScores || {}).forEach(([k,v]) => {
+        if (!skillAvgs[k]) skillAvgs[k] = [];
+        skillAvgs[k].push(v);
+      });
+      const fr = pipelineResults[`${c.name}-${c.role}`];
+      if (fr?.biasFlags?.length > 0) biasFlags.push(...fr.biasFlags);
+    });
+
+    const avgScore = Math.round(totalScore / candidates.length);
+    const skillAverages = Object.entries(skillAvgs).map(([k,v]) => ({
+      skill: k, avg: Math.round(v.reduce((a,b)=>a+b,0)/v.length)
+    })).sort((a,b) => a.avg - b.avg);
+
+    setBiasReport({
+      totalCandidates: candidates.length,
+      avgScore,
+      verdictCounts,
+      skillAverages,
+      biasFlags: [...new Set(biasFlags)],
+      lowestSkill: skillAverages[0],
+      highestSkill: skillAverages[skillAverages.length-1],
+      generatedAt: new Date().toLocaleDateString(),
+    });
+    setGeneratingBias(false);
+  };
 
   /* ── PHASE 1 FUNCTIONS ── */
 
@@ -1797,6 +2046,7 @@ Return EXACTLY this JSON:
       setResult(parsed2);
       setForm(f=>({...f,candidate:interviewCandidate}));
       await incrementUsage();
+      if (notifyOnAnalysis) await sendNotification(interviewCandidate, parsed2);
       const matchedRole = roles.find(r=>r.title===selectedRole.title&&r.status==='active');
       if (matchedRole) {
         const newCount = (matchedRole.candidates_count||0)+1;
@@ -1948,6 +2198,7 @@ Return EXACTLY this JSON:
               {id:"roles",    label:"Open Roles",       icon:"📋"},
               {id:"analyze",  label:"Analyze Interview", icon:"⚡"},
               {id:"pipeline", label:"Pipeline",          icon:"📊"},
+              {id:"team",     label:"Team",              icon:"👥"},
               {id:"settings", label:"Settings",          icon:"⚙️"},
               ...(profile?.is_admin ? [{id:"admin", label:"Admin", icon:"🛡"}] : []),
             ].map(t=>(
@@ -3256,6 +3507,94 @@ Return EXACTLY this JSON:
           </div>
         )}
 
+        {/* ── TEAM VIEW ── */}
+        <div style={{display:tab==="team"?"flex":"none",flexDirection:"column",overflow:"hidden",flex:1}}>
+          <div className="team-view">
+            <div className="team-head">
+              <span style={{font:"700 13px var(--mono)",letterSpacing:2,textTransform:"uppercase",color:"var(--sub)"}}>👥 Team</span>
+            </div>
+
+            {!team ? (
+              <div className="team-section">
+                <div style={{padding:"32px 24px",textAlign:"center"}}>
+                  <div style={{fontSize:44,marginBottom:12,opacity:.4}}>👥</div>
+                  <div style={{font:"700 16px var(--font)",marginBottom:6}}>No Team Yet</div>
+                  <div style={{fontSize:13,color:"var(--sub)",lineHeight:1.6,marginBottom:20,maxWidth:340,margin:"0 auto 20px"}}>
+                    Create a team to collaborate with other recruiters. Share roles, candidates, and pipeline across your whole team.
+                  </div>
+                  <div style={{display:"flex",gap:8,justifyContent:"center",maxWidth:400,margin:"0 auto"}}>
+                    <input className="inp" placeholder="Team name e.g. Acme Recruiting"
+                      value={teamName} onChange={e=>setTeamName(e.target.value)}
+                      onKeyDown={e=>e.key==="Enter"&&createTeam()}
+                      style={{flex:1}}/>
+                    <button className="new-role-btn" onClick={createTeam}>Create Team</button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="team-section">
+                  <div className="team-section-head">
+                    <div>
+                      <div className="team-section-title">{team.name}</div>
+                      <div style={{font:"400 11px var(--mono)",color:"var(--sub)",marginTop:2}}>
+                        {teamMembers.length} member{teamMembers.length!==1?"s":""}
+                      </div>
+                    </div>
+                    <span className="role-card-seniority">TEAM</span>
+                  </div>
+                  {teamMembers.map(m=>(
+                    <div key={m.user_id} className="member-row">
+                      <div className="member-avatar">
+                        {(m.profiles?.full_name||m.profiles?.email||"?")[0].toUpperCase()}
+                      </div>
+                      <div className="member-info">
+                        <div className="member-name">{m.profiles?.full_name||"Team Member"}</div>
+                        <div className="member-email">{m.profiles?.email}</div>
+                      </div>
+                      <span className="member-role-badge">{m.role}</span>
+                      {team.owner_id === session.user.id && m.user_id !== session.user.id && (
+                        <button className="role-action-btn danger" style={{fontSize:10}}
+                          onClick={()=>setConfirmDialog({
+                            title:"Remove member?",
+                            message:`Remove ${m.profiles?.full_name||m.profiles?.email} from the team?`,
+                            confirmLabel:"Remove",
+                            danger:true,
+                            onConfirm:()=>{removeMember(m.user_id);setConfirmDialog(null);}
+                          })}>
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {team.owner_id === session.user.id && (
+                    <div className="invite-row">
+                      <input className="inp" placeholder="Invite by email..."
+                        value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)}
+                        onKeyDown={e=>e.key==="Enter"&&inviteMember()}
+                        style={{flex:1,padding:"8px 12px"}}/>
+                      <button className="add-note-btn" onClick={inviteMember}>Send Invite</button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="team-section">
+                  <div className="team-section-head">
+                    <div className="team-section-title">Team Activity</div>
+                  </div>
+                  <div style={{padding:"16px 20px"}}>
+                    <div style={{fontSize:13,color:"var(--sub)",lineHeight:1.7}}>
+                      <div style={{marginBottom:8}}>👥 <strong style={{color:"var(--text)"}}>{teamMembers.length} members</strong> on your team</div>
+                      <div style={{marginBottom:8}}>📋 <strong style={{color:"var(--text)"}}>{roles.filter(r=>r.status==="active").length} active roles</strong> being hired for</div>
+                      <div>📊 <strong style={{color:"var(--text)"}}>{candidates.length} candidates</strong> in the pipeline</div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
         {/* ── SETTINGS VIEW ── */}
         <div style={{display:tab==="settings"?"flex":"none",flexDirection:"column",overflow:"hidden",flex:1}}>
           <div className="settings-view">
@@ -3304,6 +3643,147 @@ ${emailBranding.email_signature}`:""}`}
               <button className="save-settings-btn" onClick={saveBranding}>
                 {brandingSaved ? "✓ Saved!" : "Save Branding"}
               </button>
+            </div>
+
+            {/* Referral */}
+            <div className="referral-card">
+              <div style={{font:"700 15px var(--font)",marginBottom:4}}>🎁 Refer & Earn</div>
+              <div style={{font:"400 12px var(--font)",color:"var(--sub)",lineHeight:1.6}}>
+                Invite recruiters to HireIQ. For every person who signs up with your link, you both get <strong style={{color:"var(--hi)"}}>+50 bonus analyses</strong>.
+              </div>
+              <div className="referral-link-box">
+                <span>{window.location.origin}?ref={referralCode||"..."}</span>
+                <button className="role-action-btn primary" style={{fontSize:10,flexShrink:0}}
+                  onClick={copyReferralLink}>
+                  {copiedReferral ? "✓ Copied!" : "Copy Link"}
+                </button>
+              </div>
+              <div className="referral-stats">
+                <div className="referral-stat">
+                  <div className="referral-stat-val">{referralCount}</div>
+                  <div className="referral-stat-label">Referrals</div>
+                </div>
+                <div className="referral-stat">
+                  <div className="referral-stat-val" style={{color:"var(--green)"}}>{referralBonus}</div>
+                  <div className="referral-stat-label">Bonus Analyses</div>
+                </div>
+                <div className="referral-stat">
+                  <div className="referral-stat-val" style={{color:"var(--amber)"}}>$49</div>
+                  <div className="referral-stat-label">Per Referral Value</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Notifications */}
+            <div className="settings-section">
+              <div className="settings-section-title">🔔 Notifications</div>
+              <div className="settings-section-sub">
+                Get notified when a scorecard is generated. Enter an email or a Slack webhook URL.
+              </div>
+              <div className="notif-toggle-row">
+                <div className="notif-toggle-info">
+                  <div className="notif-toggle-title">Email Notifications</div>
+                  <div className="notif-toggle-sub">Send scorecard summary to an email address</div>
+                </div>
+              </div>
+              <div className="field" style={{marginBottom:12}}>
+                <label className="label">Notify Email</label>
+                <input className="inp" placeholder="hiring-manager@company.com"
+                  value={notifyEmail} onChange={e=>setNotifyEmail(e.target.value)}/>
+              </div>
+              <div className="notif-toggle-row">
+                <div className="notif-toggle-info">
+                  <div className="notif-toggle-title">Slack Notifications</div>
+                  <div className="notif-toggle-sub">Post scorecard to a Slack channel via webhook</div>
+                </div>
+              </div>
+              <div className="field" style={{marginBottom:8}}>
+                <label className="label">Slack Webhook URL</label>
+                <div style={{display:"flex",gap:8}}>
+                  <input className="inp" placeholder="https://hooks.slack.com/services/..."
+                    value={notifySlack} onChange={e=>setNotifySlack(e.target.value)}/>
+                  <button className="webhook-test-btn" onClick={testSlackWebhook}>Test</button>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:8,marginTop:4}}>
+                <button className="save-settings-btn" onClick={saveNotifSettings}>
+                  {notifySaved ? "✓ Saved!" : "Save Notifications"}
+                </button>
+              </div>
+            </div>
+
+            {/* Bias Report */}
+            <div className="settings-section">
+              <div className="settings-section-title">📊 Bias Report</div>
+              <div className="settings-section-sub">
+                Analyze your hiring patterns across all scored candidates. Requires at least 3 candidates in your pipeline.
+              </div>
+              <button className="save-settings-btn"
+                style={{background:generatingBias?"var(--dim)":"linear-gradient(135deg,var(--violet),var(--hi2))"}}
+                onClick={generateBiasReport} disabled={generatingBias}>
+                {generatingBias ? "⟳ Generating..." : "Generate Bias Report"}
+              </button>
+              {biasReport && (
+                <div style={{marginTop:16,display:"flex",flexDirection:"column",gap:12}}>
+                  <div style={{font:"500 11px var(--mono)",color:"var(--sub)",letterSpacing:1}}>
+                    REPORT · {biasReport.generatedAt} · {biasReport.totalCandidates} candidates
+                  </div>
+
+                  {/* Verdict distribution */}
+                  <div>
+                    <div style={{font:"600 12px var(--font)",marginBottom:8,color:"var(--sub)"}}>Verdict Distribution</div>
+                    {Object.entries(biasReport.verdictCounts).map(([v,c])=>{
+                      const vc = VERDICT_COLORS[v]||VERDICT_COLORS["Borderline"];
+                      const pct = Math.round((c/biasReport.totalCandidates)*100);
+                      return (
+                        <div key={v} className="bias-bar-item">
+                          <span className="bias-bar-label" style={{fontSize:11}}>{v}</span>
+                          <div className="bias-bar-track">
+                            <div className="bias-bar-fill" style={{width:`${pct}%`,background:vc.text}}/>
+                          </div>
+                          <span className="bias-bar-val">{c} ({pct}%)</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Skill averages */}
+                  <div>
+                    <div style={{font:"600 12px var(--font)",marginBottom:8,color:"var(--sub)"}}>Skill Score Averages</div>
+                    {biasReport.skillAverages.map(({skill,avg})=>(
+                      <div key={skill} className="bias-bar-item">
+                        <span className="bias-bar-label" style={{fontSize:11}}>{skill}</span>
+                        <div className="bias-bar-track">
+                          <div className="bias-bar-fill" style={{width:`${avg}%`,background:avg>=75?"var(--green)":avg>=50?"var(--amber)":"var(--rose)"}}/>
+                        </div>
+                        <span className="bias-bar-val">{avg}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Insights */}
+                  {biasReport.lowestSkill && (
+                    <div className="bias-insight">
+                      ⚠️ <div><strong>Consistently low on {biasReport.lowestSkill.skill}</strong> — average score of {biasReport.lowestSkill.avg}/100 across all candidates. Consider whether your evaluation criteria for this skill is too strict.</div>
+                    </div>
+                  )}
+                  {biasReport.biasFlags.length > 0 && (
+                    <div className="bias-insight">
+                      ⚠️ <div><strong>{biasReport.biasFlags.length} bias flag{biasReport.biasFlags.length>1?"s":""} detected in your notes</strong> — {biasReport.biasFlags.slice(0,2).join("; ")}</div>
+                    </div>
+                  )}
+                  {biasReport.biasFlags.length === 0 && (
+                    <div className="bias-ok">
+                      ✓ <div><strong>No bias flags detected</strong> in your interview notes. Your language appears neutral and objective.</div>
+                    </div>
+                  )}
+                  {biasReport.avgScore && (
+                    <div style={{font:"400 12px var(--font)",color:"var(--sub)"}}>
+                      Average candidate score: <strong style={{color:"var(--text)"}}>{biasReport.avgScore}/100</strong>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Account Info */}
