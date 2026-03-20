@@ -21,29 +21,18 @@ html,body,#root{height:100%;background:var(--ink);color:var(--text);font-family:
   background-image:radial-gradient(ellipse at 20% 50%, rgba(56,189,248,0.04) 0%, transparent 60%),
                    radial-gradient(ellipse at 80% 20%, rgba(129,140,248,0.04) 0%, transparent 60%);
 }
-
 .auth-card{
   width:100%;max-width:420px;
   background:var(--ink2);border:1px solid var(--line);
   border-radius:16px;padding:40px;
   box-shadow:0 24px 64px rgba(0,0,0,0.4);
 }
-
-.auth-logo{
-  display:flex;align-items:center;gap:10px;
-  margin-bottom:32px;justify-content:center;
-}
-.auth-logo-icon{
-  width:36px;height:36px;border-radius:9px;
-  background:linear-gradient(135deg,var(--hi),var(--hi2));
-  display:flex;align-items:center;justify-content:center;font-size:18px;
-}
+.auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:32px;justify-content:center;}
+.auth-logo-icon{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--hi),var(--hi2));display:flex;align-items:center;justify-content:center;font-size:18px;}
 .auth-logo-text{font:900 20px var(--font);letter-spacing:-0.5px}
 .auth-logo-text em{color:var(--hi);font-style:normal}
-
 .auth-title{font:700 22px var(--font);margin-bottom:6px;text-align:center}
 .auth-sub{font-size:13px;color:var(--sub);text-align:center;margin-bottom:28px;line-height:1.6}
-
 .auth-field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
 .auth-label{font:600 11px var(--mono);letter-spacing:1.5px;text-transform:uppercase;color:var(--hi)}
 .auth-inp{
@@ -54,7 +43,6 @@ html,body,#root{height:100%;background:var(--ink);color:var(--text);font-family:
 }
 .auth-inp:focus{border-color:var(--hi);box-shadow:0 0 0 3px rgba(56,189,248,.06)}
 .auth-inp::placeholder{color:var(--dim)}
-
 .auth-btn{
   width:100%;padding:13px;margin-top:6px;
   background:linear-gradient(135deg,var(--hi),var(--hi2));
@@ -65,13 +53,8 @@ html,body,#root{height:100%;background:var(--ink);color:var(--text);font-family:
 }
 .auth-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 24px rgba(56,189,248,.2)}
 .auth-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
-
-.auth-divider{
-  display:flex;align-items:center;gap:12px;
-  margin:18px 0;color:var(--dim);font-size:12px;
-}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--dim);font-size:12px;}
 .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--line)}
-
 .google-btn{
   width:100%;padding:12px;
   background:var(--ink3);border:1px solid var(--line2);
@@ -80,31 +63,17 @@ html,body,#root{height:100%;background:var(--ink);color:var(--text);font-family:
   transition:all .15s;display:flex;align-items:center;justify-content:center;gap:10px;
 }
 .google-btn:hover{border-color:var(--hi);background:var(--ink2)}
-
-.auth-switch{
-  text-align:center;margin-top:20px;
-  font-size:13px;color:var(--sub);
-}
-.auth-switch button{
-  background:none;border:none;color:var(--hi);
-  font:600 13px var(--font);cursor:pointer;
-}
+.auth-switch{text-align:center;margin-top:20px;font-size:13px;color:var(--sub);}
+.auth-switch button{background:none;border:none;color:var(--hi);font:600 13px var(--font);cursor:pointer;}
 .auth-switch button:hover{text-decoration:underline}
-
-.auth-error{
-  background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);
-  border-radius:8px;padding:10px 14px;
-  font-size:12px;color:var(--rose);margin-bottom:14px;line-height:1.5;
-}
-.auth-success{
-  background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);
-  border-radius:8px;padding:10px 14px;
-  font-size:12px;color:var(--green);margin-bottom:14px;line-height:1.5;
-}
+.auth-error{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--rose);margin-bottom:14px;line-height:1.5;}
+.auth-success{background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--green);margin-bottom:14px;line-height:1.5;}
+.forgot-link{background:none;border:none;color:var(--sub);font:400 12px var(--font);cursor:pointer;text-align:right;margin-top:-8px;margin-bottom:10px;display:block;transition:.15s;}
+.forgot-link:hover{color:var(--hi)}
 `;
 
 export default function AuthPage() {
-  const [mode, setMode] = useState("login"); // login | signup
+  const [mode, setMode] = useState("login"); // login | signup | reset
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -147,6 +116,22 @@ export default function AuthPage() {
     if (error) setError(error.message);
   };
 
+  const handlePasswordReset = async () => {
+    setError(""); setSuccess("");
+    if (!email.trim()) { setError("Please enter your email address first."); return; }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setSuccess("Password reset email sent! Check your inbox and follow the link.");
+    } catch (err) {
+      setError(err.message);
+    }
+    setLoading(false);
+  };
+
   return (
     <>
       <style>{FONTS}{CSS}</style>
@@ -157,11 +142,13 @@ export default function AuthPage() {
             <div className="auth-logo-text">Hire<em>IQ</em></div>
           </div>
 
-          <div className="auth-title">{mode === "login" ? "Welcome back" : "Create your account"}</div>
+          <div className="auth-title">
+            {mode === "login" ? "Welcome back" : mode === "signup" ? "Create your account" : "Reset Password"}
+          </div>
           <div className="auth-sub">
-            {mode === "login"
-              ? "Sign in to your HireIQ account"
-              : "Start with 10 free AI scorecards per month"}
+            {mode === "login" ? "Sign in to your HireIQ account"
+              : mode === "signup" ? "Start with free AI scorecards per month"
+              : "Enter your email and we'll send you a reset link"}
           </div>
 
           {error && <div className="auth-error">⚠ {error}</div>}
@@ -176,37 +163,60 @@ export default function AuthPage() {
 
           <div className="auth-field">
             <label className="auth-label">Email</label>
-            <input className="auth-inp" type="email" placeholder="you@company.com" value={email} onChange={e => setEmail(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handleEmailAuth()} />
+            <input className="auth-inp" type="email" placeholder="you@company.com" value={email}
+              onChange={e => setEmail(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && (mode === "reset" ? handlePasswordReset() : handleEmailAuth())} />
           </div>
 
-          <div className="auth-field">
-            <label className="auth-label">Password</label>
-            <input className="auth-inp" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handleEmailAuth()} />
-          </div>
+          {mode !== "reset" && (
+            <div className="auth-field">
+              <label className="auth-label">Password</label>
+              <input className="auth-inp" type="password" placeholder="••••••••" value={password}
+                onChange={e => setPassword(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleEmailAuth()} />
+            </div>
+          )}
 
-          <button className="auth-btn" onClick={handleEmailAuth} disabled={loading}>
-            {loading ? "⟳ Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
-          </button>
+          {mode === "login" && (
+            <button className="forgot-link" onClick={() => { setMode("reset"); setError(""); setSuccess(""); }}>
+              Forgot password?
+            </button>
+          )}
 
-          <div className="auth-divider">or</div>
+          {mode === "reset" ? (
+            <button className="auth-btn" onClick={handlePasswordReset} disabled={loading}>
+              {loading ? "⟳ Sending..." : "Send Reset Link"}
+            </button>
+          ) : (
+            <button className="auth-btn" onClick={handleEmailAuth} disabled={loading}>
+              {loading ? "⟳ Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
+            </button>
+          )}
 
-          <button className="google-btn" onClick={handleGoogle}>
-            <svg width="18" height="18" viewBox="0 0 18 18">
-              <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/>
-              <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2.04a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/>
-              <path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z"/>
-              <path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z"/>
-            </svg>
-            Continue with Google
-          </button>
+          {mode !== "reset" && (
+            <>
+              <div className="auth-divider">or</div>
+              <button className="google-btn" onClick={handleGoogle}>
+                <svg width="18" height="18" viewBox="0 0 18 18">
+                  <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/>
+                  <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2.04a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/>
+                  <path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z"/>
+                  <path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z"/>
+                </svg>
+                Continue with Google
+              </button>
+            </>
+          )}
 
           <div className="auth-switch">
-            {mode === "login" ? (
-              <>Don't have an account? <button onClick={() => { setMode("signup"); setError(""); }}>Sign up free</button></>
-            ) : (
-              <>Already have an account? <button onClick={() => { setMode("login"); setError(""); }}>Sign in</button></>
+            {mode === "login" && (
+              <>Don't have an account? <button onClick={() => { setMode("signup"); setError(""); setSuccess(""); }}>Sign up free</button></>
+            )}
+            {mode === "signup" && (
+              <>Already have an account? <button onClick={() => { setMode("login"); setError(""); setSuccess(""); }}>Sign in</button></>
+            )}
+            {mode === "reset" && (
+              <>Remember your password? <button onClick={() => { setMode("login"); setError(""); setSuccess(""); }}>Back to Sign In</button></>
             )}
           </div>
         </div>
