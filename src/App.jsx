@@ -449,13 +449,14 @@ textarea.inp{resize:none;line-height:1.65;min-height:110px}
 .progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--hi),var(--hi2));border-radius:2px;transition:width .4s ease}
 .progress-label{font:500 11px var(--mono);color:var(--sub);white-space:nowrap}
 
-.interview-body{flex:1;overflow:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px}
+.interview-body{flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;padding:32px 24px;min-height:0}
 .question-card{
   width:100%;max-width:680px;
   background:var(--ink2);border:1px solid var(--line);
   border-radius:16px;padding:32px;
   display:flex;flex-direction:column;gap:24px;
   animation:riseIn .35s ease;
+  margin:auto 0;
 }
 .question-meta{display:flex;align-items:center;gap:10px}
 .question-num{font:700 11px var(--mono);color:var(--hi);letter-spacing:1px}
@@ -616,10 +617,10 @@ textarea.inp{resize:none;line-height:1.65;min-height:110px}
 .status-rejected{background:rgba(248,113,113,.08);color:var(--rose);border:1px solid rgba(248,113,113,.2)}
 
 .status-menu{
-  position:absolute;top:calc(100% + 4px);left:0;z-index:300;
+  position:fixed;z-index:9000;
   background:var(--ink2);border:1px solid var(--line2);
   border-radius:9px;padding:6px;min-width:150px;
-  box-shadow:0 8px 24px rgba(0,0,0,.4);
+  box-shadow:0 8px 32px rgba(0,0,0,.6);
   animation:toastIn .15s ease;
 }
 .status-menu-item{
@@ -914,6 +915,7 @@ export default function HireIQPro({ session }) {
   const [statusMenuFor, setStatusMenuFor] = useState(null);
   const [showComparison, setShowComparison] = useState(null);
   const [pipelineSort, setPipelineSort] = useState('score');
+  const [statusMenuPos, setStatusMenuPos] = useState({top:0,left:0});
   const [showTemplates, setShowTemplates] = useState(false);
   const [templateSearch, setTemplateSearch] = useState("");
 
@@ -1335,7 +1337,7 @@ Return ONLY a valid JSON array, no markdown, no explanation:
     "question": "<the exact question to read aloud>",
     "skill": "<which skill from the list this evaluates>",
     "type": "<Technical|Behavioral|Situational|Leadership|Culture>",
-    "hint": "<3-4 sentences: what a strong answer includes, what a weak answer looks like, and 1 follow-up to probe deeper if needed>"
+    "hint": ["<bullet 1: key element of a strong answer>", "<bullet 2: what a weak answer looks like>", "<bullet 3: follow-up probe question to ask if needed>"]
   }
 ]`;
 
@@ -1737,7 +1739,20 @@ Return EXACTLY this JSON:
                         <span style={{color:"var(--green)",fontWeight:700,fontSize:10,fontFamily:"var(--mono)",letterSpacing:1,display:"block",marginBottom:8,borderBottom:"1px solid var(--line)",paddingBottom:6}}>
                           ✓ WHAT A STRONG ANSWER INCLUDES
                         </span>
-                        <span style={{color:"var(--text)"}}>{questions[currentQ].hint}</span>
+                        {Array.isArray(questions[currentQ].hint) ? (
+                          <ul style={{listStyle:"none",display:"flex",flexDirection:"column",gap:8,margin:0,padding:0}}>
+                            {questions[currentQ].hint.map((h,i)=>(
+                              <li key={i} style={{display:"flex",gap:10,alignItems:"flex-start",fontSize:13,lineHeight:1.65}}>
+                                <span style={{color:i===0?"var(--green)":i===1?"var(--rose)":"var(--amber)",fontSize:16,lineHeight:1,flexShrink:0}}>
+                                  {i===0?"✓":i===1?"✗":"→"}
+                                </span>
+                                <span style={{color:i===0?"var(--text)":i===1?"rgba(248,113,113,.8)":"var(--sub)"}}>{h}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <span style={{color:"var(--text)",fontSize:13,lineHeight:1.7}}>{questions[currentQ].hint}</span>
+                        )}
                       </div>
                     )}
 
@@ -2339,19 +2354,14 @@ Return EXACTLY this JSON:
                                       <td>
                                         <div style={{position:"relative"}}>
                                           <span className={`status-badge status-${getCandidateStatus(c.name,c.role)}`}
-                                            onClick={e=>{e.stopPropagation();setStatusMenuFor(statusMenuFor===`${c.name}-${c.role}`?null:`${c.name}-${c.role}`);}}>
+                                            onClick={e=>{
+                                              e.stopPropagation();
+                                              const rect = e.currentTarget.getBoundingClientRect();
+                                              setStatusMenuPos({top: rect.bottom+4, left: rect.left});
+                                              setStatusMenuFor(statusMenuFor===`${c.name}-${c.role}`?null:`${c.name}-${c.role}`);
+                                            }}>
                                             {getStatusInfo(getCandidateStatus(c.name,c.role)).label} ▾
                                           </span>
-                                          {statusMenuFor===`${c.name}-${c.role}` && (
-                                            <div className="status-menu">
-                                              {CANDIDATE_STATUSES.map(s=>(
-                                                <div key={s.id} className="status-menu-item"
-                                                  onClick={e=>{e.stopPropagation();updateCandidateStatus(`${c.name}-${c.role}`,s.id);}}>
-                                                  <span className={`status-badge status-${s.id}`} style={{cursor:"default",pointerEvents:"none"}}>{s.label}</span>
-                                                </div>
-                                              ))}
-                                            </div>
-                                          )}
                                         </div>
                                       </td>
                                       <td>
@@ -2632,7 +2642,18 @@ Return EXACTLY this JSON:
 
         {/* Close status menu on outside click */}
         {statusMenuFor && (
-          <div style={{position:"fixed",inset:0,zIndex:200}} onClick={()=>setStatusMenuFor(null)}/>
+          <div style={{position:"fixed",inset:0,zIndex:8999}} onClick={()=>setStatusMenuFor(null)}/>
+        )}
+        {/* Status menu rendered at root level with fixed position */}
+        {statusMenuFor && (
+          <div className="status-menu" style={{top:statusMenuPos.top, left:statusMenuPos.left}}>
+            {CANDIDATE_STATUSES.map(s=>(
+              <div key={s.id} className="status-menu-item"
+                onClick={e=>{e.stopPropagation();updateCandidateStatus(statusMenuFor,s.id);}}>
+                <span className={`status-badge status-${s.id}`} style={{cursor:"default",pointerEvents:"none"}}>{s.label}</span>
+              </div>
+            ))}
+          </div>
         )}
 
         {/* ── COMPARISON OVERLAY ── */}
