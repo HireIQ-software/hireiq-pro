@@ -2379,7 +2379,11 @@ Return EXACTLY this JSON:
                   <div className="empty">
                     <div className="empty-icon">⚠️</div>
                     <div className="empty-h">Analysis Failed</div>
-                    <div className="empty-p">Something went wrong. Please try again.</div>
+                    <div className="empty-p">Something went wrong — this happens occasionally. Click retry to try again.</div>
+                    <button className="new-role-btn" style={{marginTop:8,fontSize:12,padding:"8px 18px"}}
+                      onClick={()=>{setResult(null);analyze();}}>
+                      ↺ Retry Analysis
+                    </button>
                   </div>
                 )}
 
