@@ -18,6 +18,8 @@ export default function ResetPassword({ onDone }) {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
+      // Sign out after reset so user gets a clean login
+      await supabase.auth.signOut();
       setSuccess(true);
       setTimeout(() => onDone(), 2500);
     } catch (err) {

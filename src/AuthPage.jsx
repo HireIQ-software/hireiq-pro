@@ -98,6 +98,8 @@ export default function AuthPage() {
         setSuccess("Account created! Check your email to confirm your account, then log in.");
         setMode("login");
       } else {
+        // Clear any stale session first (common issue after password reset)
+        await supabase.auth.signOut();
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
