@@ -729,6 +729,84 @@ textarea.inp{resize:none;line-height:1.65;min-height:110px}
   font:400 10px var(--mono);color:var(--dim);
   letter-spacing:.5px;margin-left:6px;
 }
+/* ── PHASE 2: ADMIN + NOTES + EMAIL BRANDING ── */
+
+/* Admin */
+.admin-view{flex:1;overflow:auto;padding:24px;display:flex;flex-direction:column;gap:20px}
+.admin-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.admin-stat{
+  background:var(--ink2);border:1px solid var(--line);
+  border-radius:10px;padding:16px 20px;
+}
+.admin-stat-val{font:900 28px var(--font);margin-bottom:4px}
+.admin-stat-label{font:500 11px var(--mono);color:var(--sub);letter-spacing:.5px;text-transform:uppercase}
+.admin-table-wrap{background:var(--ink2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.admin-table{width:100%;border-collapse:collapse}
+.admin-table th{
+  padding:11px 16px;text-align:left;
+  font:700 10px var(--mono);letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--sub);border-bottom:1px solid var(--line);background:var(--ink3);
+}
+.admin-table td{padding:12px 16px;font-size:13px;border-bottom:1px solid var(--line)}
+.admin-table tr:last-child td{border-bottom:none}
+.admin-table tr:hover td{background:var(--ink3)}
+.plan-select{
+  background:var(--ink3);border:1px solid var(--line2);
+  border-radius:6px;padding:4px 8px;
+  color:var(--text);font:500 11px var(--mono);cursor:pointer;outline:none;
+}
+
+/* Notes timeline */
+.notes-timeline{display:flex;flex-direction:column;gap:0}
+.note-entry{
+  display:flex;gap:14px;padding:12px 0;
+  border-bottom:1px solid var(--line);
+}
+.note-entry:last-child{border-bottom:none}
+.note-dot-wrap{display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0;padding-top:3px}
+.note-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.note-line{width:1px;flex:1;background:var(--line);margin-top:4px}
+.note-content{flex:1}
+.note-meta{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.note-type-chip{
+  font:600 9px var(--mono);letter-spacing:1px;text-transform:uppercase;
+  padding:2px 6px;border-radius:4px;
+}
+.note-time{font:400 10px var(--mono);color:var(--dim)}
+.note-text{font-size:13px;color:var(--text);line-height:1.6}
+.add-note-row{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.note-type-sel{
+  background:var(--ink3);border:1px solid var(--line2);
+  border-radius:7px;padding:8px 10px;
+  color:var(--text);font:400 12px var(--font);outline:none;
+  flex-shrink:0;width:130px;
+}
+.add-note-btn{
+  padding:8px 14px;background:rgba(56,189,248,.1);
+  border:1px solid rgba(56,189,248,.25);border-radius:7px;
+  color:var(--hi);font:600 11px var(--mono);cursor:pointer;
+  transition:.15s;white-space:nowrap;flex-shrink:0;
+}
+.add-note-btn:hover{background:rgba(56,189,248,.18)}
+
+/* Settings / Email Branding */
+.settings-view{flex:1;overflow:auto;padding:24px;display:flex;flex-direction:column;gap:20px;max-width:640px}
+.settings-section{background:var(--ink2);border:1px solid var(--line);border-radius:12px;padding:20px 24px}
+.settings-section-title{font:700 14px var(--font);margin-bottom:4px}
+.settings-section-sub{font-size:12px;color:var(--sub);line-height:1.6;margin-bottom:16px}
+.settings-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.preview-email{
+  background:var(--ink3);border:1px solid var(--line2);
+  border-radius:8px;padding:14px 16px;
+  font-size:12.5px;line-height:1.8;color:var(--text);
+  white-space:pre-wrap;margin-top:12px;
+}
+.save-settings-btn{
+  padding:10px 20px;background:linear-gradient(135deg,var(--hi),var(--hi2));
+  border:none;border-radius:8px;color:#000;font:700 13px var(--font);
+  cursor:pointer;transition:.2s;margin-top:4px;
+}
+.save-settings-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(56,189,248,.2)}
 
 /* ── ROLES PAGE ── */
 .roles-view{flex:1;overflow:auto;padding:24px;display:flex;flex-direction:column;gap:20px}
@@ -916,6 +994,15 @@ export default function HireIQPro({ session }) {
   const [showComparison, setShowComparison] = useState(null);
   const [pipelineSort, setPipelineSort] = useState('score');
   const [statusMenuPos, setStatusMenuPos] = useState({top:0,left:0});
+  // Phase 2 state
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [candidateNotes, setCandidateNotes] = useState([]);
+  const [newNote, setNewNote] = useState("");
+  const [newNoteType, setNewNoteType] = useState("general");
+  const [notesFor, setNotesFor] = useState(null);
+  const [emailBranding, setEmailBranding] = useState({company_name:"",recruiter_name:"",email_signature:""});
+  const [brandingSaved, setBrandingSaved] = useState(false);
+  const [activeDetailTab, setActiveDetailTab] = useState("scorecard");
   const [showTemplates, setShowTemplates] = useState(false);
   const [templateSearch, setTemplateSearch] = useState("");
 
@@ -981,8 +1068,19 @@ export default function HireIQPro({ session }) {
         setCandidateStatuses(statusMap);
       }
     };
+    const loadBranding = async () => {
+      const { data } = await supabase
+        .from('profiles').select('company_name,recruiter_name,email_signature')
+        .eq('id', session.user.id).single();
+      if (data) setEmailBranding({
+        company_name: data.company_name || "",
+        recruiter_name: data.recruiter_name || "",
+        email_signature: data.email_signature || ""
+      });
+    };
     loadRoles();
     loadStatuses();
+    loadBranding();
   }, [session]);
 
   const autoDetectRoleSkills = (title, seniority) => {
@@ -1124,6 +1222,97 @@ export default function HireIQPro({ session }) {
     setSkillsList(l=>l.filter(s=>s!==name));
     setSkills(s=>{ const n={...s}; delete n[name]; return n; });
   };
+
+  /* ── PHASE 2 FUNCTIONS ── */
+
+  // Admin: load all users
+  const loadAdminData = async () => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id,email,full_name,plan,analyses_used,analyses_limit,created_at,is_admin');
+    if (data) setAdminUsers(data);
+  };
+
+  const updateUserPlan = async (userId, plan, limit) => {
+    await supabase.from('profiles')
+      .update({ plan, analyses_limit: limit })
+      .eq('id', userId);
+    setAdminUsers(u => u.map(x => x.id === userId ? {...x, plan, analyses_limit: limit} : x));
+    showToast("✓ User plan updated");
+  };
+
+  // Notes
+  const loadNotes = async (candidateName, roleTitle) => {
+    setNotesFor(`${candidateName}-${roleTitle}`);
+    const { data } = await supabase
+      .from('candidate_notes')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .eq('candidate_name', candidateName)
+      .eq('role_title', roleTitle)
+      .order('created_at', { ascending: true });
+    if (data) setCandidateNotes(data);
+  };
+
+  const addNote = async (candidateName, roleTitle) => {
+    if (!newNote.trim()) return;
+    const { data } = await supabase.from('candidate_notes').insert({
+      user_id: session.user.id,
+      candidate_name: candidateName,
+      role_title: roleTitle,
+      note: newNote.trim(),
+      note_type: newNoteType,
+    }).select().single();
+    if (data) setCandidateNotes(n => [...n, data]);
+    setNewNote("");
+    showToast("✓ Note added");
+  };
+
+  const deleteNote = async (noteId) => {
+    await supabase.from('candidate_notes').delete().eq('id', noteId);
+    setCandidateNotes(n => n.filter(x => x.id !== noteId));
+  };
+
+  // Email Branding
+  const saveBranding = async () => {
+    await supabase.from('profiles').update({
+      company_name: emailBranding.company_name,
+      recruiter_name: emailBranding.recruiter_name,
+      email_signature: emailBranding.email_signature,
+    }).eq('id', session.user.id);
+    setProfile(p => ({...p, ...emailBranding}));
+    setBrandingSaved(true);
+    setTimeout(() => setBrandingSaved(false), 2000);
+    showToast("✓ Branding saved");
+  };
+
+  const applyBrandingToEmail = (emailText) => {
+    if (!emailBranding.company_name && !emailBranding.recruiter_name) return emailText;
+    let branded = emailText;
+    if (emailBranding.company_name) {
+      branded = branded.replace(/\[Company\]/gi, emailBranding.company_name)
+                       .replace(/our company/gi, emailBranding.company_name)
+                       .replace(/the company/gi, emailBranding.company_name);
+    }
+    if (emailBranding.recruiter_name) {
+      branded = branded.replace(/\[Your Name\]/gi, emailBranding.recruiter_name)
+                       .replace(/Best regards,[\s\S]*?$/m, `Best regards,
+${emailBranding.recruiter_name}${emailBranding.company_name ? `
+${emailBranding.company_name}` : ""}${emailBranding.email_signature ? `
+${emailBranding.email_signature}` : ""}`);
+    }
+    return branded;
+  };
+
+  const NOTE_TYPES = [
+    {id:"general",    label:"General",     color:"var(--sub)",   bg:"rgba(93,122,148,.15)"},
+    {id:"interview",  label:"Interview",   color:"var(--hi)",    bg:"rgba(56,189,248,.1)"},
+    {id:"concern",    label:"Concern",     color:"var(--rose)",  bg:"rgba(248,113,113,.1)"},
+    {id:"positive",   label:"Positive",    color:"var(--green)", bg:"rgba(52,211,153,.1)"},
+    {id:"followup",   label:"Follow-up",   color:"var(--amber)", bg:"rgba(251,191,36,.1)"},
+  ];
+
+  const getNoteType = (id) => NOTE_TYPES.find(t => t.id === id) || NOTE_TYPES[0];
 
   /* ── PHASE 1 FUNCTIONS ── */
 
@@ -1609,9 +1798,11 @@ Return EXACTLY this JSON:
           <div className="nav-brand">Hire<em>IQ</em> <span style={{fontWeight:300,fontSize:12,color:"var(--sub)"}}>Pro</span></div>
           <div className="nav-tabs">
             {[
-              {id:"roles",   label:"Open Roles", icon:"📋"},
-              {id:"analyze", label:"Analyze Interview", icon:"⚡"},
-              {id:"pipeline",label:"Pipeline", icon:"📊"},
+              {id:"roles",    label:"Open Roles",       icon:"📋"},
+              {id:"analyze",  label:"Analyze Interview", icon:"⚡"},
+              {id:"pipeline", label:"Pipeline",          icon:"📊"},
+              {id:"settings", label:"Settings",          icon:"⚙️"},
+              ...(profile?.is_admin ? [{id:"admin", label:"Admin", icon:"🛡"}] : []),
             ].map(t=>(
               <button key={t.id} className={`nav-tab ${tab===t.id?"active":""}`} onClick={()=>setTab(t.id)}>
                 <span className="dot"/>
@@ -2164,7 +2355,7 @@ Return EXACTLY this JSON:
                             ))}
                           </div>
                           <div className="email-body">
-                            {emailTab==="advance"?result.advanceEmail:emailTab==="reject"?result.rejectEmail:result.holdEmail}
+                            {applyBrandingToEmail(emailTab==="advance"?result.advanceEmail:emailTab==="reject"?result.rejectEmail:result.holdEmail)}
                           </div>
                           <div className="email-foot">
                             <button className={`copy-btn ${copied===emailTab?"copied":""}`} onClick={copyEmail}>
@@ -2614,10 +2805,76 @@ Return EXACTLY this JSON:
                   <div style={{font:"700 18px var(--font)"}}>{selectedPipelineCandidate.name}</div>
                   <div style={{font:"400 12px var(--mono)",color:"var(--sub)",marginTop:2}}>{selectedPipelineCandidate.role}</div>
                 </div>
-                <button className="modal-cancel" onClick={()=>setSelectedPipelineCandidate(null)} style={{padding:"6px 14px"}}>✕ Close</button>
+                <div style={{display:"flex",gap:8}}>
+                  <button className="export-btn"
+                    onClick={()=>exportPDF(selectedPipelineCandidate, selectedPipelineCandidate.fullResult)}>
+                    ↓ PDF
+                  </button>
+                  <button className="modal-cancel" onClick={()=>{setSelectedPipelineCandidate(null);setActiveDetailTab("scorecard");}} style={{padding:"6px 14px"}}>✕ Close</button>
+                </div>
+              </div>
+              {/* Detail Tabs */}
+              <div style={{display:"flex",gap:4,borderBottom:"1px solid var(--line)",paddingBottom:0,marginBottom:16}}>
+                {["scorecard","notes"].map(t=>(
+                  <button key={t} onClick={()=>{
+                    setActiveDetailTab(t);
+                    if(t==="notes") loadNotes(selectedPipelineCandidate.name, selectedPipelineCandidate.role);
+                  }} style={{
+                    padding:"8px 16px",background:"none",border:"none",
+                    font:`600 12px var(--mono)`,letterSpacing:".5px",textTransform:"uppercase",
+                    color:activeDetailTab===t?"var(--hi)":"var(--sub)",
+                    borderBottom:activeDetailTab===t?"2px solid var(--hi)":"2px solid transparent",
+                    cursor:"pointer",transition:".15s",
+                  }}>
+                    {t==="scorecard"?"📊 Scorecard":"📝 Notes & Timeline"}
+                  </button>
+                ))}
               </div>
 
-              {(() => {
+              {activeDetailTab === "notes" ? (
+                <div>
+                  <div className="notes-timeline">
+                    {candidateNotes.length === 0 ? (
+                      <div style={{padding:"20px 0",color:"var(--sub)",fontSize:13,textAlign:"center"}}>
+                        No notes yet. Add your first note below.
+                      </div>
+                    ) : candidateNotes.map((note, i) => {
+                      const nt = getNoteType(note.note_type);
+                      return (
+                        <div key={note.id} className="note-entry">
+                          <div className="note-dot-wrap">
+                            <div className="note-dot" style={{background:nt.color}}/>
+                            {i < candidateNotes.length-1 && <div className="note-line"/>}
+                          </div>
+                          <div className="note-content">
+                            <div className="note-meta">
+                              <span className="note-type-chip" style={{background:nt.bg,color:nt.color}}>{nt.label}</span>
+                              <span className="note-time">{new Date(note.created_at).toLocaleDateString()} {new Date(note.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>
+                              <button onClick={()=>deleteNote(note.id)} style={{background:"none",border:"none",color:"var(--dim)",cursor:"pointer",fontSize:12,marginLeft:"auto"}}>✕</button>
+                            </div>
+                            <div className="note-text">{note.note}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="add-note-row">
+                    <select className="note-type-sel" value={newNoteType} onChange={e=>setNewNoteType(e.target.value)}>
+                      {NOTE_TYPES.map(t=><option key={t.id} value={t.id}>{t.label}</option>)}
+                    </select>
+                    <input className="inp" style={{flex:1,padding:"8px 12px"}}
+                      placeholder="Add a note about this candidate..."
+                      value={newNote}
+                      onChange={e=>setNewNote(e.target.value)}
+                      onKeyDown={e=>e.key==="Enter"&&addNote(selectedPipelineCandidate.name,selectedPipelineCandidate.role)}
+                    />
+                    <button className="add-note-btn"
+                      onClick={()=>addNote(selectedPipelineCandidate.name,selectedPipelineCandidate.role)}>
+                      + Add
+                    </button>
+                  </div>
+                </div>
+              ) : (() => {
                 const r = selectedPipelineCandidate.fullResult || selectedPipelineCandidate;
                 const vc = VERDICT_COLORS[selectedPipelineCandidate.verdict] || VERDICT_COLORS["Borderline"];
                 return (
@@ -2673,6 +2930,7 @@ Return EXACTLY this JSON:
                   </>
                 );
               })()}
+              ) : null}
             </div>
           </div>
         )}
@@ -2809,6 +3067,176 @@ Return EXACTLY this JSON:
                   );
                 })}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── SETTINGS VIEW ── */}
+        <div style={{display:tab==="settings"?"flex":"none",flexDirection:"column",overflow:"hidden",flex:1}}>
+          <div className="settings-view">
+            <div style={{font:"700 13px var(--mono)",letterSpacing:2,textTransform:"uppercase",color:"var(--sub)"}}>Settings</div>
+
+            {/* Email Branding */}
+            <div className="settings-section">
+              <div className="settings-section-title">✉️ Email Branding</div>
+              <div className="settings-section-sub">
+                Personalize the advance, reject, and hold emails generated for your candidates.
+                Your company name and signature will be automatically applied to all emails.
+              </div>
+              <div className="settings-row">
+                <div className="field">
+                  <label className="label">Company Name</label>
+                  <input className="inp" placeholder="e.g. Acme Corp"
+                    value={emailBranding.company_name}
+                    onChange={e=>setEmailBranding(b=>({...b,company_name:e.target.value}))}/>
+                </div>
+                <div className="field">
+                  <label className="label">Your Name</label>
+                  <input className="inp" placeholder="e.g. Sarah Johnson"
+                    value={emailBranding.recruiter_name}
+                    onChange={e=>setEmailBranding(b=>({...b,recruiter_name:e.target.value}))}/>
+                </div>
+              </div>
+              <div className="field" style={{marginTop:10}}>
+                <label className="label">Email Signature <span style={{fontWeight:400,color:"var(--dim)"}}>optional</span></label>
+                <input className="inp" placeholder="e.g. Head of Talent · acmecorp.com"
+                  value={emailBranding.email_signature}
+                  onChange={e=>setEmailBranding(b=>({...b,email_signature:e.target.value}))}/>
+              </div>
+              {emailBranding.recruiter_name && (
+                <div className="preview-email">
+                  <span style={{font:"600 10px var(--mono)",color:"var(--hi)",letterSpacing:1,display:"block",marginBottom:8}}>PREVIEW</span>
+                  {`Dear [Candidate Name],
+
+Thank you for interviewing with us for the [Role] position. We were impressed with your background and would like to invite you to the next round...
+
+Best regards,
+${emailBranding.recruiter_name}${emailBranding.company_name?`
+${emailBranding.company_name}`:""}${emailBranding.email_signature?`
+${emailBranding.email_signature}`:""}`}
+                </div>
+              )}
+              <button className="save-settings-btn" onClick={saveBranding}>
+                {brandingSaved ? "✓ Saved!" : "Save Branding"}
+              </button>
+            </div>
+
+            {/* Account Info */}
+            <div className="settings-section">
+              <div className="settings-section-title">👤 Account</div>
+              <div className="settings-section-sub">Your current plan and usage.</div>
+              <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
+                <div style={{background:"var(--ink3)",border:"1px solid var(--line)",borderRadius:8,padding:"12px 16px",flex:1,minWidth:140}}>
+                  <div style={{font:"900 22px var(--font)",color:"var(--hi)"}}>{profile?.plan||"free"}</div>
+                  <div style={{font:"500 11px var(--mono)",color:"var(--sub)",marginTop:2,textTransform:"uppercase",letterSpacing:.5}}>Current Plan</div>
+                </div>
+                <div style={{background:"var(--ink3)",border:"1px solid var(--line)",borderRadius:8,padding:"12px 16px",flex:1,minWidth:140}}>
+                  <div style={{font:"900 22px var(--font)",color:isLimitReached()?"var(--rose)":"var(--green)"}}>{profile?.analyses_used||0}/{profile?.analyses_limit||10}</div>
+                  <div style={{font:"500 11px var(--mono)",color:"var(--sub)",marginTop:2,textTransform:"uppercase",letterSpacing:.5}}>Analyses Used</div>
+                </div>
+                <div style={{background:"var(--ink3)",border:"1px solid var(--line)",borderRadius:8,padding:"12px 16px",flex:1,minWidth:140}}>
+                  <div style={{font:"900 22px var(--font)",color:"var(--text)"}}>{candidates.length}</div>
+                  <div style={{font:"500 11px var(--mono)",color:"var(--sub)",marginTop:2,textTransform:"uppercase",letterSpacing:.5}}>Candidates Scored</div>
+                </div>
+              </div>
+              {isLimitReached() && (
+                <div style={{marginTop:14,background:"rgba(52,211,153,.06)",border:"1px solid rgba(52,211,153,.2)",borderRadius:8,padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <div style={{fontSize:13,color:"var(--green)"}}>Upgrade to Pro for unlimited analyses</div>
+                  <a href="mailto:hireiqpro@gmail.com?subject=Upgrade to Pro" style={{padding:"7px 16px",background:"linear-gradient(135deg,var(--hi),var(--hi2))",borderRadius:7,color:"#000",fontWeight:700,fontSize:12,textDecoration:"none"}}>
+                    Upgrade — $49/mo
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── ADMIN VIEW ── */}
+        {profile?.is_admin && (
+          <div style={{display:tab==="admin"?"flex":"none",flexDirection:"column",overflow:"hidden",flex:1}}>
+            <div className="admin-view">
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <span style={{font:"700 13px var(--mono)",letterSpacing:2,textTransform:"uppercase",color:"var(--sub)"}}>🛡 Admin Dashboard</span>
+                <button className="new-role-btn" onClick={loadAdminData} style={{fontSize:11,padding:"6px 14px"}}>↺ Refresh</button>
+              </div>
+
+              {/* Stats */}
+              {adminUsers.length > 0 && (
+                <>
+                  <div className="admin-stats">
+                    <div className="admin-stat">
+                      <div className="admin-stat-val" style={{color:"var(--hi)"}}>{adminUsers.length}</div>
+                      <div className="admin-stat-label">Total Users</div>
+                    </div>
+                    <div className="admin-stat">
+                      <div className="admin-stat-val" style={{color:"var(--green)"}}>{adminUsers.filter(u=>u.plan==="pro").length}</div>
+                      <div className="admin-stat-label">Pro Users</div>
+                    </div>
+                    <div className="admin-stat">
+                      <div className="admin-stat-val" style={{color:"var(--amber)"}}>{adminUsers.reduce((s,u)=>s+(u.analyses_used||0),0)}</div>
+                      <div className="admin-stat-label">Total Analyses</div>
+                    </div>
+                    <div className="admin-stat">
+                      <div className="admin-stat-val" style={{color:"var(--violet)"}}>{adminUsers.filter(u=>(u.analyses_used||0)>0).length}</div>
+                      <div className="admin-stat-label">Active Users</div>
+                    </div>
+                  </div>
+
+                  <div className="admin-table-wrap">
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>User</th>
+                          <th>Email</th>
+                          <th>Plan</th>
+                          <th>Analyses Used</th>
+                          <th>Limit</th>
+                          <th>Joined</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {adminUsers.map(u=>(
+                          <tr key={u.id}>
+                            <td style={{fontWeight:600}}>{u.full_name||"—"}</td>
+                            <td style={{color:"var(--sub)",fontSize:12,fontFamily:"var(--mono)"}}>{u.email}</td>
+                            <td>
+                              <span className="status-badge" style={{
+                                background:u.plan==="pro"?"rgba(52,211,153,.1)":"rgba(93,122,148,.1)",
+                                color:u.plan==="pro"?"var(--green)":"var(--sub)",
+                                border:`1px solid ${u.plan==="pro"?"rgba(52,211,153,.3)":"rgba(93,122,148,.2)"}`,
+                              }}>{u.plan||"free"}</span>
+                            </td>
+                            <td style={{font:"600 13px var(--mono)",color:barColor((u.analyses_used||0)/(u.analyses_limit||10)*100)}}>{u.analyses_used||0}</td>
+                            <td style={{font:"500 13px var(--mono)",color:"var(--sub)"}}>{u.analyses_limit||10}</td>
+                            <td style={{fontSize:11,color:"var(--sub)",fontFamily:"var(--mono)"}}>{u.created_at?new Date(u.created_at).toLocaleDateString():"—"}</td>
+                            <td>
+                              <select className="plan-select"
+                                value={u.plan||"free"}
+                                onChange={e=>{
+                                  const plan = e.target.value;
+                                  const limit = plan==="pro"?500:plan==="team"?500:10;
+                                  updateUserPlan(u.id, plan, limit);
+                                }}>
+                                <option value="free">Free</option>
+                                <option value="pro">Pro</option>
+                                <option value="team">Team</option>
+                              </select>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+
+              {adminUsers.length === 0 && (
+                <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,color:"var(--sub)"}}>
+                  <div style={{fontSize:44,opacity:.2}}>🛡</div>
+                  <div style={{font:"700 16px var(--font)",opacity:.2}}>Click Refresh to Load Users</div>
+                </div>
+              )}
             </div>
           </div>
         )}
