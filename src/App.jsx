@@ -1348,23 +1348,64 @@ Return ONLY a valid JSON array, no markdown, no explanation:
         body:JSON.stringify({prompt})
       });
       const data = await res.json();
-      const text = typeof data === 'string' ? data : JSON.stringify(data);
-      let parsed;
-      try { parsed = typeof data === 'object' && Array.isArray(data) ? data : JSON.parse(text.replace(/```json|```/g,"")); }
-      catch { parsed = data; }
-      if (Array.isArray(parsed)) {
-        setQuestions(parsed);
+
+      // Extract raw text from whatever shape the response is
+      let text = "";
+      if (typeof data === "string") text = data;
+      else if (Array.isArray(data)) text = JSON.stringify(data);
+      else text = JSON.stringify(data);
+
+      // Find the JSON array in the text
+      const clean = text.replace(/```json|```/g, "").trim();
+      const arrStart = clean.indexOf("[");
+      const arrEnd = clean.lastIndexOf("]");
+
+      let parsed = null;
+      if (arrStart !== -1 && arrEnd !== -1) {
+        try { parsed = JSON.parse(clean.slice(arrStart, arrEnd + 1)); }
+        catch(e) { console.error("Question parse error:", e, clean.slice(arrStart, arrStart+200)); }
+      }
+
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Normalize hint — always make it an array of 3 bullets
+        const normalized = parsed.map(q => {
+          let hint = q.hint;
+          if (!Array.isArray(hint)) {
+            // Convert string hint to bullets
+            hint = [
+              hint || "Look for specific examples with clear ownership and measurable outcomes.",
+              "Weak answer: vague, uses 'we' instead of 'I', no concrete results.",
+              "Follow-up: 'What would you do differently next time?'"
+            ];
+          }
+          return { ...q, hint };
+        });
+        setQuestions(normalized);
       } else {
+        // Fallback — varied question types
+        const skillArr = skills.split(",").map(s => s.trim());
+        const types = ["Technical","Behavioral","Situational","Leadership","Culture"];
+        const templates = [
+          (skill) => `Walk me through a time you had to solve a complex ${skill} problem under a tight deadline. What approach did you take?`,
+          (skill) => `Tell me about a specific situation where your ${skill} skills directly impacted the outcome of a project.`,
+          (skill) => `How would you handle a scenario where your approach to ${skill} was challenged by a senior colleague?`,
+          (skill) => `What is the most difficult ${skill}-related challenge you have faced and how did you overcome it?`,
+          (skill) => `Describe a time you went above and beyond to demonstrate ${skill} in your role.`,
+        ];
         const fallback = Array.from({length:count}, (_,i) => ({
-          question: `Tell me about a specific situation where you demonstrated ${skills.split(",")[i % skills.split(",").length]?.trim() || "problem solving"} under pressure. What was the outcome?`,
-          skill: skills.split(",")[i % skills.split(",").length]?.trim() || "General",
-          type: "Behavioral",
-          hint: "Strong answer: specific situation with measurable outcome, clear personal ownership, reflection on what they learned. Weak answer: vague, uses 'we' instead of 'I', no metrics. Follow-up: 'What would you do differently?'"
+          question: templates[i % templates.length](skillArr[i % skillArr.length]),
+          skill: skillArr[i % skillArr.length],
+          type: types[i % types.length],
+          hint: [
+            "Strong answer: specific situation, clear personal ownership, measurable outcome, reflection on learning.",
+            "Weak answer: vague story, uses 'we', no metrics, no personal accountability.",
+            "Follow-up: 'What would you do differently if faced with this again?'"
+          ]
         }));
         setQuestions(fallback);
       }
     } catch(e) {
-      console.error(e);
+      console.error("Interview generation error:", e);
     }
     setGeneratingQuestions(false);
   };
