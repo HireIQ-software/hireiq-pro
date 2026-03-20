@@ -807,6 +807,35 @@ textarea.inp{resize:none;line-height:1.65;min-height:110px}
   cursor:pointer;transition:.2s;margin-top:4px;
 }
 .save-settings-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(56,189,248,.2)}
+/* ── ONBOARDING ── */
+.onboard-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px}
+.onboard-card{background:var(--ink2);border:1px solid var(--line);border-radius:16px;padding:36px;width:100%;max-width:520px;text-align:center}
+.onboard-icon{font-size:48px;margin-bottom:16px}
+.onboard-title{font:900 24px var(--font);margin-bottom:8px;letter-spacing:-.5px}
+.onboard-sub{font-size:14px;color:var(--sub);line-height:1.7;margin-bottom:28px;max-width:380px;margin-left:auto;margin-right:auto}
+.onboard-steps{display:flex;flex-direction:column;gap:12px;margin-bottom:28px;text-align:left}
+.onboard-step{display:flex;align-items:center;gap:14px;background:var(--ink3);border:1px solid var(--line2);border-radius:10px;padding:14px 16px}
+.onboard-step-num{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--hi),var(--hi2));display:flex;align-items:center;justify-content:center;font:700 13px var(--font);color:#000;flex-shrink:0}
+.onboard-step-text{font-size:13px;line-height:1.5}
+.onboard-step-title{font:700 13px var(--font);display:block;margin-bottom:2px}
+.onboard-btn{padding:14px 32px;background:linear-gradient(135deg,var(--hi),var(--hi2));border:none;border-radius:10px;color:#000;font:700 15px var(--font);cursor:pointer;transition:all .2s}
+.onboard-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(56,189,248,.25)}
+
+/* ── PIPELINE SEARCH ── */
+.pipeline-search{background:var(--ink3);border:1px solid var(--line2);border-radius:7px;padding:7px 12px;color:var(--text);font:400 13px var(--font);outline:none;transition:.15s;width:200px}
+.pipeline-search:focus{border-color:var(--hi)}
+.pipeline-search::placeholder{color:var(--dim)}
+
+/* ── PRO BADGE ── */
+.pro-badge{display:inline-block;padding:2px 7px;border-radius:4px;font:700 9px var(--mono);letter-spacing:1px;text-transform:uppercase;background:linear-gradient(135deg,var(--amber),#f59e0b);color:#000;margin-left:6px}
+.free-badge{display:inline-block;padding:2px 7px;border-radius:4px;font:700 9px var(--mono);letter-spacing:1px;text-transform:uppercase;background:rgba(93,122,148,.2);color:var(--sub);margin-left:6px}
+
+/* ── CONFIRM DIALOG ── */
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1500;display:flex;align-items:center;justify-content:center;padding:20px}
+.confirm-card{background:var(--ink2);border:1px solid var(--line);border-radius:12px;padding:24px;width:100%;max-width:380px}
+.confirm-title{font:700 16px var(--font);margin-bottom:8px}
+.confirm-sub{font-size:13px;color:var(--sub);line-height:1.6;margin-bottom:20px}
+.confirm-actions{display:flex;gap:10px;justify-content:flex-end}
 
 /* ── ROLES PAGE ── */
 .roles-view{flex:1;overflow:auto;padding:24px;display:flex;flex-direction:column;gap:20px}
@@ -1003,6 +1032,10 @@ export default function HireIQPro({ session }) {
   const [emailBranding, setEmailBranding] = useState({company_name:"",recruiter_name:"",email_signature:""});
   const [brandingSaved, setBrandingSaved] = useState(false);
   const [activeDetailTab, setActiveDetailTab] = useState("scorecard");
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [pipelineSearch, setPipelineSearch] = useState("");
+  const [confirmDialog, setConfirmDialog] = useState(null);
+  const [dbCandidates, setDbCandidates] = useState([]);
   const [showTemplates, setShowTemplates] = useState(false);
   const [templateSearch, setTemplateSearch] = useState("");
 
@@ -1087,9 +1120,48 @@ export default function HireIQPro({ session }) {
         email_signature: data.email_signature || ""
       });
     };
+    // Fix 1 & 3: Load pipeline candidates from DB so they persist across sessions
+    const loadPipelineCandidates = async () => {
+      const { data } = await supabase
+        .from('pipeline_candidates')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
+      if (data && data.length > 0) {
+        const mapped = data.map((c, i) => ({
+          name: c.candidate_name,
+          role: c.role_title,
+          score: c.score,
+          verdict: c.verdict,
+          jdMatch: c.jd_match,
+          skillScores: c.skill_scores || {},
+          summary: c.summary,
+          savedAt: new Date(c.created_at).toLocaleTimeString(),
+          avatarIdx: c.avatar_idx || (i % 8),
+          fullResult: {
+            overallScore: c.score,
+            verdict: c.verdict,
+            summary: c.summary,
+            skillScores: c.skill_scores || {},
+            jdMatchScore: c.jd_match,
+            strengths: c.strengths || [],
+            concerns: c.concerns || [],
+            nextSteps: c.next_steps || [],
+          }
+        }));
+        setDbCandidates(mapped);
+        setCandidates(mapped);
+      }
+    };
     loadRoles();
     loadStatuses();
     loadBranding();
+    loadPipelineCandidates();
+    // Show onboarding for new users
+    const hasSeenOnboarding = localStorage.getItem('hireiq_onboarded');
+    if (!hasSeenOnboarding) {
+      setTimeout(() => setShowOnboarding(true), 800);
+    }
   }, [session]);
 
   const autoDetectRoleSkills = (title, seniority) => {
@@ -1132,13 +1204,24 @@ export default function HireIQPro({ session }) {
   };
 
   const archiveRole = async (id) => {
-    await supabase.from('roles').update({ status: 'archived' }).eq('id', id);
-    setRoles(r => r.map(x => x.id === id ? {...x, status:'archived'} : x));
-    showToast("Role archived");
+    const role = roles.find(r => r.id === id);
+    setConfirmDialog({
+      title: "Archive this role?",
+      message: `"${role?.title}" will be archived. All candidate history is preserved and you can restore it anytime.`,
+      confirmLabel: "Archive",
+      danger: true,
+      onConfirm: async () => {
+        await supabase.from('roles').update({ status: 'archived' }).eq('id', id);
+        setRoles(r => r.map(x => x.id === id ? {...x, status:'archived'} : x));
+        setConfirmDialog(null);
+        showToast("Role archived");
+      }
+    });
   };
 
   const selectRole = (role) => {
     setSelectedRole(role);
+    localStorage.setItem('hireiq_selected_role', JSON.stringify(role));
     setForm(f => ({ ...f, role: role.title, seniority: role.seniority, jd: role.job_description || "", candidate: "", notes: "" }));
     // Load role skills if saved, else use preset based on title
     if (role.skills && role.skills.length > 0) {
@@ -1203,10 +1286,23 @@ export default function HireIQPro({ session }) {
 
   const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null),3000); };
 
-  // Remember last interview round
+  // Remember last interview round + restore selected role
   useEffect(() => {
-    const saved = localStorage.getItem('hireiq_last_round');
-    if (saved) setInterviewContext(c=>({...c, roundNumber: saved}));
+    const savedRound = localStorage.getItem('hireiq_last_round');
+    if (savedRound) setInterviewContext(c=>({...c, roundNumber: savedRound}));
+
+    const savedRole = localStorage.getItem('hireiq_selected_role');
+    if (savedRole) {
+      try {
+        const role = JSON.parse(savedRole);
+        setSelectedRole(role);
+        setForm(f => ({ ...f, role: role.title, seniority: role.seniority, jd: role.job_description || "" }));
+        if (role.skills && role.skills.length > 0) {
+          setSkillsList(role.skills);
+          setSkills(Object.fromEntries(role.skills.map(s=>[s,0])));
+        }
+      } catch(e) {}
+    }
   }, []);
 
   const setSkill = (name, val) => setSkills(s=>({...s,[name]:val===s[name]?0:val}));
@@ -1616,13 +1712,34 @@ Return ONLY a valid JSON array, no markdown, no explanation:
     setAnswers(newAnswers);
     setCurrentRating(0);
     setCurrentNote("");
+    // Auto-save progress
+    localStorage.setItem('hireiq_interview_progress', JSON.stringify({
+      candidateName: interviewCandidate,
+      roleTitle: selectedRole?.title,
+      questions,
+      answers: newAnswers,
+      currentQ: currentQ + 1,
+      savedAt: Date.now()
+    }));
 
     if (currentQ + 1 >= questions.length) {
-      // All questions done — generate scorecard
+      localStorage.removeItem('hireiq_interview_progress');
       await generateScorecardFromInterview(newAnswers);
     } else {
       setCurrentQ(q => q + 1);
     }
+  };
+
+  // Restore interview progress if available
+  const restoreInterviewProgress = () => {
+    const saved = localStorage.getItem('hireiq_interview_progress');
+    if (!saved) return false;
+    try {
+      const data = JSON.parse(saved);
+      const age = Date.now() - data.savedAt;
+      if (age > 24 * 60 * 60 * 1000) { localStorage.removeItem('hireiq_interview_progress'); return false; }
+      return data;
+    } catch { return false; }
   };
 
   const generateScorecardFromInterview = async (allAnswers) => {
@@ -1771,7 +1888,7 @@ Return EXACTLY this JSON:
     setLoading(false);
   };
 
-  const saveCandidate = () => {
+  const saveCandidate = async () => {
     if (!result || result.error) return;
     const candidateName = form.candidate || `Candidate ${candidates.length+1}`;
     const idx = candidates.findIndex(c=>c.name===candidateName && c.role===form.role);
@@ -1785,17 +1902,35 @@ Return EXACTLY this JSON:
       summary: result.summary,
       savedAt: new Date().toLocaleTimeString(),
       avatarIdx: (candidates.length) % AVATARS.length,
+      fullResult: result,
     };
     if (idx>=0) { const nc=[...candidates]; nc[idx]=entry; setCandidates(nc); }
     else setCandidates(c=>[...c, entry]);
-    // Store full result for pipeline view
     setPipelineResults(prev => ({...prev, [`${candidateName}-${form.role}`]: result}));
+    // Persist to Supabase with full result data
+    await supabase.from('pipeline_candidates').upsert({
+      user_id: session.user.id,
+      role_id: roles.find(r=>r.title===form.role)?.id || null,
+      role_title: form.role,
+      candidate_name: candidateName,
+      score: result.overallScore,
+      verdict: result.verdict,
+      jd_match: result.jdMatchScore,
+      skill_scores: result.skillScores,
+      summary: result.summary,
+      strengths: result.strengths,
+      concerns: result.concerns,
+      next_steps: result.nextSteps,
+      avatar_idx: (candidates.length) % AVATARS.length,
+      status: 'interviewed',
+    }, { onConflict: 'user_id,candidate_name,role_title' });
     showToast(`✓ ${entry.name} saved to pipeline`);
   };
 
   const copyEmail = () => {
     const emails = {advance:result?.advanceEmail, reject:result?.rejectEmail, hold:result?.holdEmail};
-    navigator.clipboard.writeText(emails[emailTab]||"");
+    const branded = applyBrandingToEmail(emails[emailTab]||"");
+    navigator.clipboard.writeText(branded);
     setCopied(emailTab); setTimeout(()=>setCopied(""),2000);
   };
 
@@ -1852,7 +1987,10 @@ Return EXACTLY this JSON:
                       <div className="profile-info">
                         <div className="profile-name">{profile.full_name || "Recruiter"}</div>
                         <div className="profile-mail">{session?.user?.email}</div>
-                        <span className="profile-plan">{profile.plan||"free"} plan</span>
+                        {profile.plan === 'pro' || profile.plan === 'team'
+                          ? <span className="pro-badge">⚡ {profile.plan}</span>
+                          : <span className="free-badge">free plan</span>
+                        }
                       </div>
                       <div className="profile-usage-bar">
                         <div className="pub-label">Monthly Usage</div>
@@ -1898,6 +2036,31 @@ Return EXACTLY this JSON:
                   All fields are optional — the more you provide, the better the questions.
                 </div>
               </div>
+              {(() => {
+                const saved = restoreInterviewProgress();
+                if (saved && saved.candidateName === form.candidate && saved.roleTitle === selectedRole?.title) {
+                  return (
+                    <div style={{background:"rgba(251,191,36,.08)",border:"1px solid rgba(251,191,36,.2)",borderRadius:8,padding:"12px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+                      <div>
+                        <div style={{font:"600 12px var(--font)",color:"var(--amber)"}}>⚡ Resume previous interview</div>
+                        <div style={{font:"400 11px var(--font)",color:"var(--sub)",marginTop:2}}>
+                          {saved.answers?.length || 0} of {saved.questions?.length || 0} questions answered
+                        </div>
+                      </div>
+                      <button className="role-action-btn primary" style={{fontSize:11}} onClick={()=>{
+                        setQuestions(saved.questions);
+                        setAnswers(saved.answers);
+                        setCurrentQ(saved.currentQ);
+                        setInterviewCandidate(form.candidate);
+                        setGeneratingQuestions(false);
+                        setInterviewMode(true);
+                        setShowInterviewSetup(false);
+                      }}>Resume →</button>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
 
               <div className="setup-row">
                 <div className="field">
@@ -2485,6 +2648,8 @@ Return EXACTLY this JSON:
             <div className="pipeline-head">
               <span className="pipeline-title">Hiring Pipeline</span>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <input className="pipeline-search" placeholder="Search candidates..."
+                  value={pipelineSearch} onChange={e=>setPipelineSearch(e.target.value)}/>
                 <span style={{font:"400 12px var(--font)",color:"var(--sub)"}}>
                   {roles.filter(r=>r.status==="active").length} active roles
                 </span>
@@ -2513,6 +2678,10 @@ Return EXACTLY this JSON:
                 {roles.filter(r=>r.status==="active").map(role=>{
                   const isExpanded = expandedPipelineRole === role.id;
                   const sortCandidates = (cands) => {
+                    // Apply search filter
+                    if (pipelineSearch.trim()) {
+                      cands = cands.filter(c => c.name.toLowerCase().includes(pipelineSearch.toLowerCase()));
+                    }
                     const s = pipelineSort || 'score';
                     return [...cands].sort((a,b) => {
                       if (s==='score') return b.score-a.score;
@@ -3249,6 +3418,66 @@ ${emailBranding.email_signature}`:""}`}
                   <div style={{font:"700 16px var(--font)",opacity:.2}}>Click Refresh to Load Users</div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* ── ONBOARDING ── */}
+        {showOnboarding && (
+          <div className="onboard-overlay">
+            <div className="onboard-card">
+              <div className="onboard-icon">🎯</div>
+              <div className="onboard-title">Welcome to HireIQ Pro</div>
+              <div className="onboard-sub">
+                The AI-powered interview platform that turns raw conversations into structured hiring decisions. Here's how to get started:
+              </div>
+              <div className="onboard-steps">
+                <div className="onboard-step">
+                  <div className="onboard-step-num">1</div>
+                  <div className="onboard-step-text">
+                    <span className="onboard-step-title">📋 Create a Role</span>
+                    Go to Open Roles → click New Role → define the job title, seniority, and paste the job description. Use a template to get started instantly.
+                  </div>
+                </div>
+                <div className="onboard-step">
+                  <div className="onboard-step-num">2</div>
+                  <div className="onboard-step-text">
+                    <span className="onboard-step-title">🎤 Interview Candidates</span>
+                    Select your role → click Analyze → enter candidate name → Start Guided Interview. AI generates tailored questions in real time.
+                  </div>
+                </div>
+                <div className="onboard-step">
+                  <div className="onboard-step-num">3</div>
+                  <div className="onboard-step-text">
+                    <span className="onboard-step-title">📊 Track Your Pipeline</span>
+                    Save scorecards to Pipeline → compare candidates side by side → track status from Interviewed to Hired.
+                  </div>
+                </div>
+              </div>
+              <button className="onboard-btn" onClick={()=>{
+                setShowOnboarding(false);
+                localStorage.setItem('hireiq_onboarded','true');
+                setTab('roles');
+              }}>
+                Create My First Role →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── CONFIRM DIALOG ── */}
+        {confirmDialog && (
+          <div className="confirm-overlay" onClick={()=>setConfirmDialog(null)}>
+            <div className="confirm-card" onClick={e=>e.stopPropagation()}>
+              <div className="confirm-title">{confirmDialog.title}</div>
+              <div className="confirm-sub">{confirmDialog.message}</div>
+              <div className="confirm-actions">
+                <button className="modal-cancel" onClick={()=>setConfirmDialog(null)}>Cancel</button>
+                <button className="modal-save" style={{background:confirmDialog.danger?"var(--rose)":"linear-gradient(135deg,var(--hi),var(--hi2))",color:confirmDialog.danger?"#fff":"#000"}}
+                  onClick={confirmDialog.onConfirm}>
+                  {confirmDialog.confirmLabel}
+                </button>
+              </div>
             </div>
           </div>
         )}
