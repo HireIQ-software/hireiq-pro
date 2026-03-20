@@ -711,6 +711,24 @@ textarea.inp{resize:none;line-height:1.65;min-height:110px}
 .template-card-skills{font:400 11px var(--font);color:var(--sub);line-height:1.5}
 .template-card-count{font:500 10px var(--mono);color:var(--dim);margin-top:6px}
 
+/* ── INTERVIEW SETUP ── */
+.setup-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.75);
+  z-index:800;display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.setup-card{
+  background:var(--ink2);border:1px solid var(--line);
+  border-radius:14px;padding:28px;width:100%;max-width:480px;
+  display:flex;flex-direction:column;gap:14px;
+}
+.setup-title{font:700 16px var(--font)}
+.setup-sub{font-size:12px;color:var(--sub);line-height:1.6;margin-top:-6px}
+.setup-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.setup-optional{
+  font:400 10px var(--mono);color:var(--dim);
+  letter-spacing:.5px;margin-left:6px;
+}
+
 /* ── ROLES PAGE ── */
 .roles-view{flex:1;overflow:auto;padding:24px;display:flex;flex-direction:column;gap:20px}
 .roles-head{display:flex;align-items:center;justify-content:space-between}
@@ -880,6 +898,10 @@ export default function HireIQPro({ session }) {
   const [generatingQuestions, setGeneratingQuestions] = useState(false);
   const [expandedPipelineRole, setExpandedPipelineRole] = useState(null);
   const [pipelineCandidates, setPipelineCandidates] = useState([]);
+  const [interviewContext, setInterviewContext] = useState({
+    yearsExp: "", background: "", roundNumber: "1", redFlags: "", industryContext: ""
+  });
+  const [showInterviewSetup, setShowInterviewSetup] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
   const [roleForm, setRoleForm] = useState({title:"",seniority:"mid",job_description:""});
@@ -1177,6 +1199,7 @@ export default function HireIQPro({ session }) {
     setInterviewCandidate(candidateName);
     setGeneratingQuestions(true);
     setInterviewMode(true);
+    setShowInterviewSetup(false);
     setAnswers([]);
     setCurrentQ(0);
     setCurrentRating(0);
@@ -1187,27 +1210,69 @@ export default function HireIQPro({ session }) {
       ? selectedRole.skills.join(", ")
       : skillsList.join(", ");
 
-    const prompt = `You are an expert interviewer. Generate exactly ${count} interview questions for this role.
+    // Get previous candidates for this role to calibrate difficulty
+    const prevCands = candidates.filter(c => c.role === selectedRole.title);
+    const avgPrevScore = prevCands.length > 0
+      ? Math.round(prevCands.reduce((sum,c) => sum + c.score, 0) / prevCands.length)
+      : null;
 
+    // Detect industry from JD
+    const jd = selectedRole.job_description || "";
+    const industry = jd.toLowerCase().includes('health') ? 'healthcare'
+      : jd.toLowerCase().includes('fintech') || jd.toLowerCase().includes('finance') ? 'fintech'
+      : jd.toLowerCase().includes('ecommerce') || jd.toLowerCase().includes('retail') ? 'e-commerce'
+      : jd.toLowerCase().includes('startup') ? 'startup'
+      : jd.toLowerCase().includes('enterprise') ? 'enterprise'
+      : 'technology';
+
+    // Build seniority-based question mix
+    const seniorityMix = {
+      junior: "Technical 20%, Behavioral 35%, Situational 30%, Culture 15% — focus on learning ability and potential",
+      mid:    "Technical 30%, Behavioral 30%, Situational 25%, Culture 15% — balance of skills and experience",
+      senior: "Technical 40%, Behavioral 25%, Situational 25%, Culture 10% — deep technical and ownership questions",
+      lead:   "Technical 30%, Behavioral 20%, Situational 20%, Leadership 20%, Culture 10% — heavy on leadership, architecture decisions, team management",
+      exec:   "Technical 15%, Behavioral 15%, Situational 20%, Leadership 35%, Culture 15% — strategic thinking, org design, vision"
+    }[selectedRole.seniority] || "Technical 30%, Behavioral 30%, Situational 25%, Culture 15%";
+
+    const prompt = `You are a world-class interviewer with 20 years of experience hiring for ${industry} companies. Generate exactly ${count} highly targeted interview questions.
+
+=== ROLE CONTEXT ===
 Role: ${selectedRole.title}
 Seniority: ${selectedRole.seniority}
-Job Description: ${selectedRole.job_description || "Not provided"}
+Industry: ${industry}
+Job Description: ${jd || "Not provided"}
 Skills to evaluate: ${skills}
 
-Rules:
-- Mix question types: technical (30%), behavioral (30%), situational (25%), culture/motivation (15%)
-- Weight technical questions higher for senior/lead roles
-- Each question should target a specific skill
-- Questions should be concise and clear — readable aloud in 10 seconds
-- Include a short hint for the recruiter (what a good answer looks like)
+=== CANDIDATE CONTEXT ===
+Candidate name: ${candidateName}
+${interviewContext.yearsExp ? `Years of experience: ${interviewContext.yearsExp}` : ""}
+${interviewContext.background ? `Background/notes: ${interviewContext.background}` : ""}
+${interviewContext.redFlags ? `Red flags to probe: ${interviewContext.redFlags}` : ""}
+${interviewContext.roundNumber !== "1" ? `Interview round: ${interviewContext.roundNumber} (ask deeper, more specific questions than round 1)` : "Interview round: 1 (initial screening)"}
 
-Return ONLY valid JSON array, no markdown:
+=== CALIBRATION ===
+${avgPrevScore ? `Previous candidates for this role averaged ${avgPrevScore}/100. Calibrate difficulty accordingly — ${avgPrevScore > 70 ? "this is a high bar, ask challenging questions" : "bar has been moderate, probe for genuine differentiators"}.` : "No previous candidates for this role."}
+
+=== QUESTION MIX ===
+${seniorityMix}
+
+=== RULES ===
+- Each question MUST target a specific skill from the list
+- Questions must be directly relevant to ${industry} context where possible
+- For senior/lead: include at least 2 questions about past failures or mistakes — these reveal character
+- For behavioral questions: use STAR format prompts (Situation/Task/Action/Result)
+- For technical questions: ask about real scenarios, not textbook definitions
+- If red flags provided: include 1-2 probing questions specifically targeting those concerns
+- Questions must be speakable aloud naturally in under 15 seconds
+- Hints must be SPECIFIC and DETAILED — tell the recruiter exactly what a great vs mediocre answer looks like
+
+Return ONLY a valid JSON array, no markdown, no explanation:
 [
   {
-    "question": "<the question to ask>",
-    "skill": "<which skill this evaluates>",
-    "type": "<Technical|Behavioral|Situational|Culture>",
-    "hint": "<what a strong answer looks like, 1 sentence>"
+    "question": "<the exact question to read aloud>",
+    "skill": "<which skill from the list this evaluates>",
+    "type": "<Technical|Behavioral|Situational|Leadership|Culture>",
+    "hint": "<3-4 sentences: what a strong answer includes, what a weak answer looks like, and 1 follow-up to probe deeper if needed>"
   }
 ]`;
 
@@ -1219,19 +1284,17 @@ Return ONLY valid JSON array, no markdown:
       });
       const data = await res.json();
       const text = typeof data === 'string' ? data : JSON.stringify(data);
-      // Try to parse — data might already be parsed or be raw text
       let parsed;
       try { parsed = typeof data === 'object' && Array.isArray(data) ? data : JSON.parse(text.replace(/```json|```/g,"")); }
       catch { parsed = data; }
       if (Array.isArray(parsed)) {
         setQuestions(parsed);
       } else {
-        // fallback questions
         const fallback = Array.from({length:count}, (_,i) => ({
-          question: `Tell me about a time you demonstrated ${skills.split(",")[i % skills.split(",").length]?.trim() || "problem solving"} in your previous role.`,
+          question: `Tell me about a specific situation where you demonstrated ${skills.split(",")[i % skills.split(",").length]?.trim() || "problem solving"} under pressure. What was the outcome?`,
           skill: skills.split(",")[i % skills.split(",").length]?.trim() || "General",
           type: "Behavioral",
-          hint: "Look for specific examples with measurable outcomes."
+          hint: "Strong answer: specific situation with measurable outcome, clear personal ownership, reflection on what they learned. Weak answer: vague, uses 'we' instead of 'I', no metrics. Follow-up: 'What would you do differently?'"
         }));
         setQuestions(fallback);
       }
@@ -1515,6 +1578,60 @@ Return EXACTLY this JSON:
           </div>
         </nav>
 
+        {/* ── INTERVIEW SETUP MODAL ── */}
+        {showInterviewSetup && (
+          <div className="setup-overlay" onClick={()=>setShowInterviewSetup(false)}>
+            <div className="setup-card" onClick={e=>e.stopPropagation()}>
+              <div>
+                <div className="setup-title">🎤 Interview Setup</div>
+                <div className="setup-sub">
+                  Add context to make questions sharper and more targeted for {form.candidate}.
+                  All fields are optional — the more you provide, the better the questions.
+                </div>
+              </div>
+
+              <div className="setup-row">
+                <div className="field">
+                  <label className="label">Years of Experience <span className="setup-optional">optional</span></label>
+                  <input className="inp" placeholder="e.g. 5" value={interviewContext.yearsExp}
+                    onChange={e=>setInterviewContext(c=>({...c,yearsExp:e.target.value}))}/>
+                </div>
+                <div className="field">
+                  <label className="label">Interview Round <span className="setup-optional">optional</span></label>
+                  <select className="sel inp" value={interviewContext.roundNumber}
+                    onChange={e=>setInterviewContext(c=>({...c,roundNumber:e.target.value}))}>
+                    <option value="1">Round 1 — Initial Screen</option>
+                    <option value="2">Round 2 — Deep Dive</option>
+                    <option value="3">Round 3 — Final</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="field">
+                <label className="label">Candidate Background <span className="setup-optional">optional</span></label>
+                <input className="inp" placeholder="e.g. Ex-Google, strong Python background, worked in fintech"
+                  value={interviewContext.background}
+                  onChange={e=>setInterviewContext(c=>({...c,background:e.target.value}))}/>
+              </div>
+
+              <div className="field">
+                <label className="label">Red Flags to Probe <span className="setup-optional">optional</span></label>
+                <input className="inp" placeholder="e.g. Short tenure at last 3 jobs, resume gap 2022-2023"
+                  value={interviewContext.redFlags}
+                  onChange={e=>setInterviewContext(c=>({...c,redFlags:e.target.value}))}/>
+              </div>
+
+              <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:4}}>
+                <button className="modal-cancel" onClick={()=>setShowInterviewSetup(false)}>Cancel</button>
+                <button className="analyze-btn" style={{margin:0,padding:"11px 24px",background:"linear-gradient(135deg,var(--green),#059669)"}}
+                  onClick={()=>startInterview(form.candidate)}>
+                  Generate Questions →
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── INTERVIEW MODE ── */}
         {interviewMode && (
           <div className="view active" style={{display:"flex"}}>
@@ -1687,7 +1804,7 @@ Return EXACTLY this JSON:
                     <button className="analyze-btn" style={{background:"linear-gradient(135deg,var(--green),#059669)"}}
                       onClick={()=>{
                         if(!form.candidate.trim()){showToast("Enter candidate name first");return;}
-                        startInterview(form.candidate);
+                        setShowInterviewSetup(true);
                       }}
                       disabled={loading||!form.candidate.trim()}>
                       🎤 Start Guided Interview
