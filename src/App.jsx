@@ -1006,9 +1006,11 @@ export default function HireIQPro({ session }) {
   const [showTemplates, setShowTemplates] = useState(false);
   const [templateSearch, setTemplateSearch] = useState("");
 
-  // Clean up reset-password URL if it's lingering
+  // Clean up reset-password URL if it's lingering (only on mount)
   useEffect(() => {
-    if (window.location.pathname.includes('reset-password') || window.location.hash.includes('access_token')) {
+    const path = window.location.pathname;
+    const hash = window.location.hash;
+    if (path.includes('reset-password') || (hash.includes('access_token') && hash.includes('type=recovery'))) {
       window.history.replaceState({}, document.title, '/');
     }
   }, []);
