@@ -1552,8 +1552,8 @@ Return EXACTLY this JSON:
 
                     {questions[currentQ].hint && (
                       <div className="question-hint">
-                        <span style={{color:"var(--hi)",fontWeight:600,fontSize:10,fontFamily:"var(--mono)",letterSpacing:1}}>GOOD ANSWER LOOKS LIKE: </span>
-                        {questions[currentQ].hint}
+                        <span style={{color:"var(--hi)",fontWeight:600,fontSize:10,fontFamily:"var(--mono)",letterSpacing:1,display:"block",marginBottom:4}}>✓ WHAT A STRONG ANSWER INCLUDES:</span>
+                        <span style={{fontSize:13,color:"var(--text)",lineHeight:1.7}}>{questions[currentQ].hint}</span>
                       </div>
                     )}
 
@@ -1629,6 +1629,7 @@ Return EXACTLY this JSON:
                       setSkillsList([...DEFAULT_SKILLS]);
                       setSkills(Object.fromEntries(DEFAULT_SKILLS.map(s=>[s,0])));
                       setResult(null);
+                      setTab("roles");
                     }}>↺ Change Role</button>
                   </div>
                   <div className="form-scroll">
@@ -2497,7 +2498,7 @@ Return EXACTLY this JSON:
 
         {/* ── TEMPLATES LIBRARY ── */}
         {showTemplates && (
-          <div className="templates-overlay" onClick={()=>setShowTemplates(false)}>
+          <div className="templates-overlay" style={{zIndex:1100}} onClick={()=>setShowTemplates(false)}>
             <div className="templates-modal" onClick={e=>e.stopPropagation()}>
               <div className="templates-head">
                 <div className="templates-title">📚 Interview Templates</div>
