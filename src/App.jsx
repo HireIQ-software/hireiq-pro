@@ -914,7 +914,7 @@ textarea.inp{resize:none;line-height:1.65;min-height:110px}
   padding:9px 20px;background:linear-gradient(135deg,var(--hi),var(--hi2));
   border:none;border-radius:8px;color:#000;font:700 13px var(--font);cursor:pointer;
 }
-`;
+
 /* ── PHASE 3: TEAM + REFERRAL + BIAS + NOTIFICATIONS ── */
 
 /* Team */
@@ -967,6 +967,7 @@ textarea.inp{resize:none;line-height:1.65;min-height:110px}
 .webhook-test-btn{padding:6px 12px;background:none;border:1px solid var(--line2);border-radius:6px;color:var(--sub);font:600 10px var(--mono);cursor:pointer;transition:.15s;white-space:nowrap}
 .webhook-test-btn:hover{border-color:var(--green);color:var(--green)}
 
+`;
 /* ─── CONSTANTS ─────────────────────────────────────────────────────────── */
 const DEFAULT_SKILLS = ["Communication","Technical","Problem Solving","Culture Fit","Leadership","Adaptability"];
 
