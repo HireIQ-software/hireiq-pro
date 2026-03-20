@@ -1006,6 +1006,13 @@ export default function HireIQPro({ session }) {
   const [showTemplates, setShowTemplates] = useState(false);
   const [templateSearch, setTemplateSearch] = useState("");
 
+  // Clean up reset-password URL if it's lingering
+  useEffect(() => {
+    if (window.location.pathname.includes('reset-password') || window.location.hash.includes('access_token')) {
+      window.history.replaceState({}, document.title, '/');
+    }
+  }, []);
+
   // Load user profile + recalculate limits + monthly reset on login
   useEffect(() => {
     if (!session) return;
@@ -1227,10 +1234,13 @@ export default function HireIQPro({ session }) {
 
   // Admin: load all users
   const loadAdminData = async () => {
-    const { data } = await supabase
+    // The "Admins can view all profiles" RLS policy allows this
+    const { data, error } = await supabase
       .from('profiles')
-      .select('id,email,full_name,plan,analyses_used,analyses_limit,created_at,is_admin');
+      .select('id,email,full_name,plan,analyses_used,analyses_limit,created_at,is_admin')
+      .order('created_at', { ascending: false });
     if (data) setAdminUsers(data);
+    if (error) console.error('Admin load error:', error);
   };
 
   const updateUserPlan = async (userId, plan, limit) => {
