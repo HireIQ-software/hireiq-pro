@@ -601,6 +601,115 @@ textarea.inp{resize:none;line-height:1.65;min-height:110px}
 .pub-track{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-bottom:4px}
 .pub-fill{height:100%;border-radius:2px;transition:width .6s ease}
 .pub-nums{font:500 10px var(--mono);color:var(--sub)}
+/* ── CANDIDATE STATUS ── */
+.status-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 10px;border-radius:20px;
+  font:600 10px var(--mono);letter-spacing:.5px;cursor:pointer;
+  transition:.15s;white-space:nowrap;
+}
+.status-applied{background:rgba(93,122,148,.15);color:#5d7a94;border:1px solid rgba(93,122,148,.3)}
+.status-screened{background:rgba(56,189,248,.1);color:var(--hi);border:1px solid rgba(56,189,248,.25)}
+.status-interviewed{background:rgba(129,140,248,.1);color:var(--hi2);border:1px solid rgba(129,140,248,.25)}
+.status-offer{background:rgba(251,191,36,.1);color:var(--amber);border:1px solid rgba(251,191,36,.25)}
+.status-hired{background:rgba(52,211,153,.1);color:var(--green);border:1px solid rgba(52,211,153,.3)}
+.status-rejected{background:rgba(248,113,113,.08);color:var(--rose);border:1px solid rgba(248,113,113,.2)}
+
+.status-menu{
+  position:absolute;top:calc(100% + 4px);left:0;z-index:300;
+  background:var(--ink2);border:1px solid var(--line2);
+  border-radius:9px;padding:6px;min-width:150px;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);
+  animation:toastIn .15s ease;
+}
+.status-menu-item{
+  padding:7px 10px;border-radius:6px;
+  font:500 11px var(--mono);cursor:pointer;
+  transition:.1s;display:flex;align-items:center;gap:7px;
+}
+.status-menu-item:hover{background:var(--ink3)}
+
+/* ── PDF EXPORT ── */
+.export-btn{
+  padding:6px 14px;background:rgba(52,211,153,.1);
+  border:1px solid rgba(52,211,153,.25);border-radius:6px;
+  color:var(--green);font:600 10px var(--mono);
+  letter-spacing:.5px;cursor:pointer;transition:.15s;
+  display:flex;align-items:center;gap:5px;
+}
+.export-btn:hover{background:rgba(52,211,153,.18)}
+
+/* ── COMPARISON VIEW ── */
+.comparison-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.85);
+  z-index:500;display:flex;flex-direction:column;overflow:hidden;
+}
+.comparison-head{
+  padding:16px 24px;background:var(--ink2);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+}
+.comparison-title{font:700 15px var(--font)}
+.comparison-grid{
+  flex:1;overflow:auto;padding:20px 24px;
+  display:grid;gap:16px;
+}
+.comp-card{
+  background:var(--ink2);border:1px solid var(--line);
+  border-radius:12px;overflow:hidden;
+}
+.comp-card.winner{border-color:rgba(52,211,153,.5);box-shadow:0 0 20px rgba(52,211,153,.1)}
+.comp-card-head{
+  padding:14px 18px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.comp-card-name{font:700 15px var(--font)}
+.comp-score{font:900 24px var(--font);border:3px solid;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;flex-shrink:0}
+.comp-score-sub{font:500 9px var(--mono);opacity:.5;margin-top:1px}
+.comp-card-body{padding:14px 18px;display:flex;flex-direction:column;gap:10px}
+.comp-winner-badge{
+  font:700 10px var(--mono);letter-spacing:1px;text-transform:uppercase;
+  background:rgba(52,211,153,.1);color:var(--green);
+  border:1px solid rgba(52,211,153,.3);padding:2px 8px;border-radius:4px;
+}
+
+/* ── TEMPLATES LIBRARY ── */
+.templates-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.8);
+  z-index:400;display:flex;align-items:center;justify-content:center;
+  padding:20px;
+}
+.templates-modal{
+  background:var(--ink2);border:1px solid var(--line);
+  border-radius:14px;width:100%;max-width:720px;
+  max-height:85vh;display:flex;flex-direction:column;overflow:hidden;
+}
+.templates-head{
+  padding:20px 24px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+}
+.templates-title{font:700 16px var(--font)}
+.templates-search{
+  background:var(--ink3);border:1px solid var(--line2);
+  border-radius:7px;padding:8px 12px;
+  color:var(--text);font:400 13px var(--font);outline:none;
+  width:200px;transition:.15s;
+}
+.templates-search:focus{border-color:var(--hi)}
+.templates-scroll{flex:1;overflow:auto;padding:16px 24px}
+.templates-category{margin-bottom:20px}
+.templates-cat-label{
+  font:700 10px var(--mono);letter-spacing:2px;text-transform:uppercase;
+  color:var(--sub);margin-bottom:10px;
+}
+.templates-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.template-card{
+  background:var(--ink3);border:1px solid var(--line2);
+  border-radius:9px;padding:12px 14px;cursor:pointer;transition:.2s;
+}
+.template-card:hover{border-color:var(--hi);background:rgba(56,189,248,.04)}
+.template-card-title{font:700 13px var(--font);margin-bottom:4px}
+.template-card-skills{font:400 11px var(--font);color:var(--sub);line-height:1.5}
+.template-card-count{font:500 10px var(--mono);color:var(--dim);margin-top:6px}
 
 /* ── ROLES PAGE ── */
 .roles-view{flex:1;overflow:auto;padding:24px;display:flex;flex-direction:column;gap:20px}
@@ -694,6 +803,38 @@ const ROLE_SKILL_PRESETS = {
   "custom":       [...DEFAULT_SKILLS],
 };
 
+const CANDIDATE_STATUSES = [
+  {id:"applied",    label:"Applied",     color:"status-applied"},
+  {id:"screened",   label:"Screened",    color:"status-screened"},
+  {id:"interviewed",label:"Interviewed", color:"status-interviewed"},
+  {id:"offer",      label:"Offer Sent",  color:"status-offer"},
+  {id:"hired",      label:"Hired ✓",     color:"status-hired"},
+  {id:"rejected",   label:"Rejected",    color:"status-rejected"},
+];
+
+const INTERVIEW_TEMPLATES = [
+  {id:"frontend",   category:"Engineering", title:"Frontend Engineer",      skills:["React/JS","CSS/Design","Problem Solving","Code Quality","Communication","System Design"],        questions:7},
+  {id:"backend",    category:"Engineering", title:"Backend Engineer",       skills:["System Design","Database","APIs","Problem Solving","Code Quality","Communication"],             questions:7},
+  {id:"fullstack",  category:"Engineering", title:"Full Stack Engineer",    skills:["Frontend","Backend","System Design","Problem Solving","Communication","Adaptability"],          questions:8},
+  {id:"ml",         category:"Engineering", title:"ML Engineer",            skills:["ML Theory","Python","MLOps","Problem Solving","Communication","Research"],                       questions:8},
+  {id:"devops",     category:"Engineering", title:"DevOps / SRE",           skills:["Infrastructure","Automation","Reliability","Problem Solving","Communication","Security"],       questions:7},
+  {id:"mobile",     category:"Engineering", title:"Mobile Engineer",        skills:["iOS/Android","Performance","UX Awareness","Problem Solving","Communication","Code Quality"],    questions:7},
+  {id:"product",    category:"Product",     title:"Product Manager",        skills:["Product Sense","Prioritization","Data Analysis","Communication","Leadership","User Empathy"],   questions:8},
+  {id:"designer",   category:"Design",      title:"UX/Product Designer",    skills:["User Research","Visual Design","Prototyping","Communication","Problem Solving","User Empathy"], questions:7},
+  {id:"brand",      category:"Design",      title:"Brand Designer",         skills:["Visual Design","Creativity","Communication","Attention to Detail","Culture Fit","Adaptability"],questions:6},
+  {id:"ae",         category:"Sales",       title:"Account Executive",      skills:["Communication","Persuasion","Resilience","Product Knowledge","Negotiation","Culture Fit"],      questions:7},
+  {id:"sdr",        category:"Sales",       title:"SDR / BDR",              skills:["Communication","Resilience","Prospecting","Product Knowledge","Culture Fit","Adaptability"],    questions:6},
+  {id:"csm",        category:"Sales",       title:"Customer Success Mgr",   skills:["Communication","Empathy","Problem Solving","Product Knowledge","Leadership","Retention"],       questions:7},
+  {id:"growth",     category:"Marketing",   title:"Growth Marketer",        skills:["Analytical Thinking","Creativity","Experimentation","Communication","Data Analysis","Culture Fit"],questions:7},
+  {id:"content",    category:"Marketing",   title:"Content Marketer",       skills:["Writing","Creativity","SEO","Communication","Analytical Thinking","Culture Fit"],               questions:6},
+  {id:"em",         category:"Management",  title:"Engineering Manager",    skills:["Leadership","Communication","Technical Depth","People Management","Strategic Thinking","Culture Fit"],questions:10},
+  {id:"pm_mgr",     category:"Management",  title:"Product Director",       skills:["Leadership","Product Sense","Communication","Strategic Thinking","Data Analysis","Culture Fit"],questions:10},
+  {id:"da",         category:"Data",        title:"Data Analyst",           skills:["SQL","Data Visualization","Analytical Thinking","Communication","Problem Solving","Attention to Detail"],questions:7},
+  {id:"ds",         category:"Data",        title:"Data Scientist",         skills:["Statistics","Python/R","ML Basics","Communication","Problem Solving","Analytical Thinking"],    questions:8},
+  {id:"hr",         category:"HR",          title:"HR Business Partner",    skills:["Communication","Empathy","Employee Relations","Problem Solving","Culture Fit","Leadership"],    questions:7},
+  {id:"finance",    category:"Finance",     title:"Finance Analyst",        skills:["Financial Modeling","Analytical Thinking","Excel/Sheets","Communication","Attention to Detail","Problem Solving"],questions:7},
+];
+
 const VERDICT_COLORS = {
   "Strong Hire":  { bg:"rgba(52,211,153,.1)",  border:"rgba(52,211,153,.3)",  text:"var(--green)" },
   "Lean Hire":    { bg:"rgba(56,189,248,.08)", border:"rgba(56,189,248,.25)", text:"var(--hi)" },
@@ -747,6 +888,11 @@ export default function HireIQPro({ session }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [selectedPipelineCandidate, setSelectedPipelineCandidate] = useState(null);
   const [pipelineResults, setPipelineResults] = useState({});
+  const [candidateStatuses, setCandidateStatuses] = useState({});
+  const [statusMenuFor, setStatusMenuFor] = useState(null);
+  const [showComparison, setShowComparison] = useState(null);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [templateSearch, setTemplateSearch] = useState("");
 
   // Load user profile + recalculate limits on login
   useEffect(() => {
@@ -924,6 +1070,101 @@ export default function HireIQPro({ session }) {
   const removeSkill = (name) => {
     setSkillsList(l=>l.filter(s=>s!==name));
     setSkills(s=>{ const n={...s}; delete n[name]; return n; });
+  };
+
+  /* ── PHASE 1 FUNCTIONS ── */
+
+  // Status management
+  const updateCandidateStatus = (candidateKey, newStatus) => {
+    setCandidateStatuses(prev => ({...prev, [candidateKey]: newStatus}));
+    setStatusMenuFor(null);
+  };
+
+  const getCandidateStatus = (name, role) => {
+    return candidateStatuses[`${name}-${role}`] || 'interviewed';
+  };
+
+  const getStatusInfo = (statusId) => {
+    return CANDIDATE_STATUSES.find(s => s.id === statusId) || CANDIDATE_STATUSES[2];
+  };
+
+  // PDF Export
+  const exportPDF = (candidate, fullResult) => {
+    const r = fullResult || candidate;
+    const vc = VERDICT_COLORS[candidate.verdict] || VERDICT_COLORS["Borderline"];
+
+    const skillBars = Object.entries(candidate.skillScores || {}).map(([k,v]) => `
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:12px">${k}</span>
+          <span style="font-size:12px;font-weight:700;color:${v>=75?'#34d399':v>=50?'#fbbf24':'#f87171'}">${v}/100</span>
+        </div>
+        <div style="height:4px;background:#1f2d3a;border-radius:2px">
+          <div style="height:100%;width:${v}%;background:${v>=75?'#34d399':v>=50?'#fbbf24':'#f87171'};border-radius:2px"></div>
+        </div>
+      </div>`).join('');
+
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>HireIQ Scorecard - ${candidate.name}</title>
+    <style>
+      body{font-family:'Segoe UI',sans-serif;background:#fff;color:#111;padding:40px;max-width:800px;margin:0 auto}
+      .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:20px;border-bottom:2px solid #e5e7eb}
+      .brand{font-size:22px;font-weight:900;color:#0a0d12}
+      .brand span{color:#38bdf8}
+      .score-circle{width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;border:3px solid ${vc.text};background:${vc.bg}}
+      .score-num{font-size:28px;font-weight:900;color:${vc.text}}
+      .score-sub{font-size:10px;color:#6b7280}
+      h2{font-size:20px;font-weight:700;margin:0 0 4px}
+      .role-info{color:#6b7280;font-size:13px}
+      .verdict{display:inline-block;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;background:${vc.bg};color:${vc.text};border:1px solid ${vc.text};margin-bottom:16px}
+      .section{margin-bottom:24px}
+      .section-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#6b7280;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #e5e7eb}
+      .summary{font-size:13px;line-height:1.7;color:#374151}
+      .list-item{display:flex;gap:8px;font-size:13px;margin-bottom:8px;line-height:1.5}
+      .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px}
+      .footer{margin-top:40px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af;text-align:center}
+    </style></head><body>
+    <div class="header">
+      <div>
+        <div class="brand">Hire<span>IQ</span> Pro</div>
+        <div style="font-size:11px;color:#9ca3af;margin-top:4px">AI Interview Scorecard</div>
+      </div>
+      <div class="score-circle"><div class="score-num">${candidate.score}</div><div class="score-sub">/100</div></div>
+    </div>
+    <h2>${candidate.name}</h2>
+    <div class="role-info">${candidate.role}</div>
+    <div style="margin-top:8px"><span class="verdict">${candidate.verdict}</span></div>
+    <div class="section">
+      <div class="section-title">Summary</div>
+      <div class="summary">${candidate.summary}</div>
+    </div>
+    ${r.jdMatchScore != null ? `<div class="section"><div class="section-title">JD Match Score</div><div style="font-size:24px;font-weight:900;color:${r.jdMatchScore>=75?'#34d399':r.jdMatchScore>=50?'#fbbf24':'#f87171'}">${r.jdMatchScore}%</div></div>` : ''}
+    <div class="section">
+      <div class="section-title">Competency Breakdown</div>
+      ${skillBars}
+    </div>
+    ${r.strengths ? `<div class="section"><div class="section-title">Strengths</div>${r.strengths.map(s=>`<div class="list-item"><div class="dot" style="background:#34d399"></div>${s}</div>`).join('')}</div>` : ''}
+    ${r.concerns ? `<div class="section"><div class="section-title">Concerns</div>${r.concerns.map(c=>`<div class="list-item"><div class="dot" style="background:#f87171"></div>${c}</div>`).join('')}</div>` : ''}
+    ${r.nextSteps ? `<div class="section"><div class="section-title">Next Steps</div>${r.nextSteps.map(s=>`<div class="list-item"><div class="dot" style="background:#38bdf8"></div>${s}</div>`).join('')}</div>` : ''}
+    <div class="footer">Generated by HireIQ Pro · hireiq-inky.vercel.app · ${new Date().toLocaleDateString()}</div>
+    </body></html>`;
+
+    const blob = new Blob([html], {type:'text/html'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `HireIQ-${candidate.name.replace(/\s/g,'-')}-Scorecard.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`✓ Scorecard exported for ${candidate.name}`);
+  };
+
+  // Template apply
+  const applyTemplate = (template) => {
+    setRoleSkills([...template.skills]);
+    setRoleForm(f => ({...f, title: f.title || template.title}));
+    setShowTemplates(false);
+    showToast(`✓ "${template.title}" template applied`);
   };
 
   /* ── INTERVIEW ── */
@@ -1464,7 +1705,13 @@ Return EXACTLY this JSON:
               <div className="phead">
                 <span className="phead-title">AI Scorecard</span>
                 {result && !result.error && (
-                  <button className="save-btn" onClick={saveCandidate}>+ Save to Pipeline</button>
+                  <div style={{display:"flex",gap:8}}>
+                    <button className="export-btn" onClick={()=>exportPDF(
+                      {name:form.candidate||"Candidate",role:form.role,score:result.overallScore,verdict:result.verdict,summary:result.summary,skillScores:result.skillScores,jdMatch:result.jdMatchScore},
+                      result
+                    )}>↓ PDF</button>
+                    <button className="save-btn" onClick={saveCandidate}>+ Save to Pipeline</button>
+                  </div>
                 )}
               </div>
               <div className="results-scroll">
@@ -1820,6 +2067,12 @@ Return EXACTLY this JSON:
                               Top: {roleCands.sort((a,b)=>b.score-a.score)[0]?.score}/100
                             </div>
                           )}
+                          {roleCands.length >= 2 && (
+                            <button className="role-action-btn primary" style={{fontSize:10}}
+                              onClick={e=>{e.stopPropagation();setShowComparison({role, candidates: roleCands});}}>
+                              ⚖ Compare
+                            </button>
+                          )}
                           <span className="role-card-seniority">{role.candidates_count||0} candidates</span>
                           <span className="chevron" style={{transform:isExpanded?"rotate(90deg)":"none"}}>▶</span>
                         </div>
@@ -1843,15 +2096,16 @@ Return EXACTLY this JSON:
                                   <th>Score</th>
                                   <th>JD Fit</th>
                                   <th>Verdict</th>
-                                  <th>Summary</th>
+                                  <th>Status</th>
+                                  <th>Actions</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {[...roleCands].sort((a,b)=>b.score-a.score).map((c,i)=>{
                                   const vc = VERDICT_COLORS[c.verdict]||VERDICT_COLORS["Borderline"];
                                   return (
-                                    <tr key={i} onClick={()=>setSelectedPipelineCandidate({...c, fullResult: pipelineResults[`${c.name}-${c.role}`]})} style={{cursor:"pointer"}}>
-                                      <td>
+                                    <tr key={i}>
+                                      <td onClick={()=>setSelectedPipelineCandidate({...c, fullResult: pipelineResults[`${c.name}-${c.role}`]})} style={{cursor:"pointer"}}>
                                         <div style={{display:"flex",alignItems:"center",gap:8}}>
                                           <span style={{fontSize:16}}>{AVATARS[c.avatarIdx||0]}</span>
                                           <span style={{fontWeight:600}}>{c.name}</span>
@@ -1866,10 +2120,36 @@ Return EXACTLY this JSON:
                                           {c.verdict}
                                         </span>
                                       </td>
-                                      <td style={{fontSize:12,color:"var(--sub)",maxWidth:200}}>
-                                        {c.summary?.slice(0,80)}{c.summary?.length>80?"…":""}
+                                      <td>
+                                        <div style={{position:"relative"}}>
+                                          <span className={`status-badge status-${getCandidateStatus(c.name,c.role)}`}
+                                            onClick={e=>{e.stopPropagation();setStatusMenuFor(statusMenuFor===`${c.name}-${c.role}`?null:`${c.name}-${c.role}`);}}>
+                                            {getStatusInfo(getCandidateStatus(c.name,c.role)).label} ▾
+                                          </span>
+                                          {statusMenuFor===`${c.name}-${c.role}` && (
+                                            <div className="status-menu">
+                                              {CANDIDATE_STATUSES.map(s=>(
+                                                <div key={s.id} className="status-menu-item"
+                                                  onClick={e=>{e.stopPropagation();updateCandidateStatus(`${c.name}-${c.role}`,s.id);}}>
+                                                  <span className={`status-badge status-${s.id}`} style={{cursor:"default",pointerEvents:"none"}}>{s.label}</span>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
                                       </td>
-                                      <td style={{fontSize:11,color:"var(--hi)",fontFamily:"var(--mono)"}}>View →</td>
+                                      <td>
+                                        <div style={{display:"flex",gap:6}}>
+                                          <button className="export-btn" style={{fontSize:10,padding:"4px 8px"}}
+                                            onClick={e=>{e.stopPropagation();exportPDF(c, pipelineResults[`${c.name}-${c.role}`]);}}>
+                                            ↓ PDF
+                                          </button>
+                                          <button className="role-action-btn primary" style={{fontSize:10,padding:"4px 8px"}}
+                                            onClick={e=>{e.stopPropagation();setSelectedPipelineCandidate({...c, fullResult: pipelineResults[`${c.name}-${c.role}`]});}}>
+                                            View
+                                          </button>
+                                        </div>
+                                      </td>
                                     </tr>
                                   );
                                 })}
@@ -1984,7 +2264,12 @@ Return EXACTLY this JSON:
         {showRoleModal && (
           <div className="modal-overlay" onClick={e=>{if(e.target===e.currentTarget){setShowRoleModal(false);setEditingRole(null);}}}>
             <div className="modal">
-              <div className="modal-title">{editingRole ? "Edit Role" : "New Role"}</div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <div className="modal-title">{editingRole ? "Edit Role" : "New Role"}</div>
+                <button className="role-action-btn primary" onClick={()=>setShowTemplates(true)} style={{fontSize:11}}>
+                  📚 Use Template
+                </button>
+              </div>
 
               <div className="field">
                 <label className="label">Job Title</label>
@@ -2127,6 +2412,126 @@ Return EXACTLY this JSON:
         {/* Close profile menu on outside click */}
         {showProfileMenu && (
           <div style={{position:"fixed",inset:0,zIndex:100}} onClick={()=>setShowProfileMenu(false)}/>
+        )}
+
+        {/* Close status menu on outside click */}
+        {statusMenuFor && (
+          <div style={{position:"fixed",inset:0,zIndex:200}} onClick={()=>setStatusMenuFor(null)}/>
+        )}
+
+        {/* ── COMPARISON OVERLAY ── */}
+        {showComparison && (
+          <div className="comparison-overlay">
+            <div className="comparison-head">
+              <div>
+                <div className="comparison-title">⚖ Candidate Comparison — {showComparison.role.title}</div>
+                <div style={{font:"400 12px var(--font)",color:"var(--sub)",marginTop:3}}>
+                  {showComparison.candidates.length} candidates · sorted by score
+                </div>
+              </div>
+              <button className="modal-cancel" onClick={()=>setShowComparison(null)}>✕ Close</button>
+            </div>
+            <div className="comparison-grid" style={{gridTemplateColumns:`repeat(${Math.min(showComparison.candidates.length,3)},1fr)`}}>
+              {[...showComparison.candidates].sort((a,b)=>b.score-a.score).map((c,i)=>{
+                const isWinner = i===0;
+                const vc = VERDICT_COLORS[c.verdict]||VERDICT_COLORS["Borderline"];
+                const allSkills = [...new Set(showComparison.candidates.flatMap(x=>Object.keys(x.skillScores||{})))];
+                return (
+                  <div key={i} className={`comp-card ${isWinner?"winner":""}`}>
+                    <div className="comp-card-head">
+                      <div>
+                        <div className="comp-card-name">
+                          {isWinner && <span style={{marginRight:6}}>👑</span>}
+                          {c.name}
+                        </div>
+                        {isWinner && <span className="comp-winner-badge">TOP CANDIDATE</span>}
+                        <div style={{marginTop:6}}>
+                          <span className="verdict-chip" style={{background:vc.bg,color:vc.text,border:`1px solid ${vc.border}`}}>{c.verdict}</span>
+                        </div>
+                      </div>
+                      <div className={`comp-score ${scoreClass(c.score)}`} style={{color: scoreClass(c.score)==='hi'?"var(--green)":scoreClass(c.score)==='mid'?"var(--amber)":"var(--rose)", borderColor: scoreClass(c.score)==='hi'?"var(--green)":scoreClass(c.score)==='mid'?"var(--amber)":"var(--rose)"}}>
+                        {c.score}
+                        <span className="comp-score-sub">/100</span>
+                      </div>
+                    </div>
+                    <div className="comp-card-body">
+                      {c.jdMatch != null && (
+                        <div style={{display:"flex",justifyContent:"space-between",font:"500 12px var(--mono)"}}>
+                          <span style={{color:"var(--sub)"}}>JD Fit</span>
+                          <span style={{color:barColor(c.jdMatch)}}>{c.jdMatch}%</span>
+                        </div>
+                      )}
+                      <div className="bar-list">
+                        {allSkills.map(skill=>{
+                          const val = c.skillScores?.[skill] || 0;
+                          const isTopForSkill = showComparison.candidates.every(x=>(x.skillScores?.[skill]||0) <= val);
+                          return (
+                            <div key={skill} className="bar-item">
+                              <div className="bar-head">
+                                <span className="bar-name" style={{color:isTopForSkill?"var(--green)":"var(--text)"}}>
+                                  {isTopForSkill && "★ "}{skill}
+                                </span>
+                                <span className="bar-val" style={{color:barColor(val)}}>{val}</span>
+                              </div>
+                              <div className="bar-track">
+                                <div className="bar-fill" style={{width:`${val}%`,background:barColor(val)}}/>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div style={{font:"400 12px var(--font)",color:"var(--sub)",lineHeight:1.6,borderTop:"1px solid var(--line)",paddingTop:10}}>
+                        {c.summary?.slice(0,120)}{c.summary?.length>120?"…":""}
+                      </div>
+                      <button className="export-btn" style={{alignSelf:"flex-start"}}
+                        onClick={()=>exportPDF(c, pipelineResults[`${c.name}-${c.role}`])}>
+                        ↓ Export PDF
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── TEMPLATES LIBRARY ── */}
+        {showTemplates && (
+          <div className="templates-overlay" onClick={()=>setShowTemplates(false)}>
+            <div className="templates-modal" onClick={e=>e.stopPropagation()}>
+              <div className="templates-head">
+                <div className="templates-title">📚 Interview Templates</div>
+                <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                  <input className="templates-search" placeholder="Search roles..."
+                    value={templateSearch} onChange={e=>setTemplateSearch(e.target.value)}/>
+                  <button className="modal-cancel" style={{padding:"7px 14px"}} onClick={()=>setShowTemplates(false)}>✕</button>
+                </div>
+              </div>
+              <div className="templates-scroll">
+                {[...new Set(INTERVIEW_TEMPLATES.map(t=>t.category))].map(cat=>{
+                  const filtered = INTERVIEW_TEMPLATES.filter(t=>
+                    t.category===cat &&
+                    (templateSearch==='' || t.title.toLowerCase().includes(templateSearch.toLowerCase()))
+                  );
+                  if(filtered.length===0) return null;
+                  return (
+                    <div key={cat} className="templates-category">
+                      <div className="templates-cat-label">{cat}</div>
+                      <div className="templates-grid">
+                        {filtered.map(t=>(
+                          <div key={t.id} className="template-card" onClick={()=>applyTemplate(t)}>
+                            <div className="template-card-title">{t.title}</div>
+                            <div className="template-card-skills">{t.skills.slice(0,3).join(", ")}{t.skills.length>3?`+${t.skills.length-3} more`:""}</div>
+                            <div className="template-card-count">{t.questions} questions · {t.skills.length} skills</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         )}
 
         {/* TOAST */}
