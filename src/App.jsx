@@ -913,31 +913,44 @@ export default function HireIQPro({ session }) {
   const [candidateStatuses, setCandidateStatuses] = useState({});
   const [statusMenuFor, setStatusMenuFor] = useState(null);
   const [showComparison, setShowComparison] = useState(null);
+  const [pipelineSort, setPipelineSort] = useState('score');
   const [showTemplates, setShowTemplates] = useState(false);
   const [templateSearch, setTemplateSearch] = useState("");
 
-  // Load user profile + recalculate limits on login
+  // Load user profile + recalculate limits + monthly reset on login
   useEffect(() => {
     if (!session) return;
     const loadProfile = async () => {
-      // Recalculate dynamic limits based on total users
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+
+      // Get current profile
+      const { data: existing } = await supabase
+        .from('profiles').select('*').eq('id', session.user.id).single();
+
+      // Check if we need monthly reset
+      const needsReset = existing &&
+        (existing.last_reset_month !== currentMonth || existing.last_reset_year !== currentYear);
+
+      // Recalculate dynamic limits
       const { count } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true });
+        .from('profiles').select('*', { count: 'exact', head: true });
       const totalUsers = count || 1;
       const newLimit = Math.max(10, Math.floor(500 / totalUsers));
 
-      // Update this user's limit
-      await supabase.from('profiles')
-        .update({ analyses_limit: newLimit })
-        .eq('id', session.user.id);
+      const updates = { analyses_limit: newLimit };
+      if (needsReset) {
+        updates.analyses_used = 0;
+        updates.last_reset_month = currentMonth;
+        updates.last_reset_year = currentYear;
+      }
+
+      await supabase.from('profiles').update(updates).eq('id', session.user.id);
 
       const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-      if (data) setProfile({...data, analyses_limit: newLimit});
+        .from('profiles').select('*').eq('id', session.user.id).single();
+      if (data) setProfile({...data, ...updates});
     };
     loadProfile();
   }, [session]);
@@ -946,18 +959,28 @@ export default function HireIQPro({ session }) {
     await supabase.auth.signOut();
   };
 
-  // Load roles
+  // Load roles + pipeline candidate statuses
   useEffect(() => {
     if (!session) return;
     const loadRoles = async () => {
       const { data } = await supabase
-        .from('roles')
-        .select('*')
+        .from('roles').select('*')
         .eq('user_id', session.user.id)
         .order('created_at', { ascending: false });
       if (data) setRoles(data);
     };
+    const loadStatuses = async () => {
+      const { data } = await supabase
+        .from('pipeline_candidates').select('candidate_name, role_title, status')
+        .eq('user_id', session.user.id);
+      if (data) {
+        const statusMap = {};
+        data.forEach(c => { statusMap[`${c.candidate_name}-${c.role_title}`] = c.status || 'interviewed'; });
+        setCandidateStatuses(statusMap);
+      }
+    };
     loadRoles();
+    loadStatuses();
   }, [session]);
 
   const autoDetectRoleSkills = (title, seniority) => {
@@ -1071,6 +1094,12 @@ export default function HireIQPro({ session }) {
 
   const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null),3000); };
 
+  // Remember last interview round
+  useEffect(() => {
+    const saved = localStorage.getItem('hireiq_last_round');
+    if (saved) setInterviewContext(c=>({...c, roundNumber: saved}));
+  }, []);
+
   const setSkill = (name, val) => setSkills(s=>({...s,[name]:val===s[name]?0:val}));
 
   const applyPreset = (presetKey) => {
@@ -1097,9 +1126,17 @@ export default function HireIQPro({ session }) {
   /* ── PHASE 1 FUNCTIONS ── */
 
   // Status management
-  const updateCandidateStatus = (candidateKey, newStatus) => {
+  const updateCandidateStatus = async (candidateKey, newStatus) => {
     setCandidateStatuses(prev => ({...prev, [candidateKey]: newStatus}));
     setStatusMenuFor(null);
+    // Persist to Supabase
+    const [candidateName, ...roleParts] = candidateKey.split('-');
+    const roleTitle = roleParts.join('-');
+    await supabase.from('pipeline_candidates')
+      .update({ status: newStatus })
+      .eq('user_id', session.user.id)
+      .eq('candidate_name', candidateName)
+      .eq('role_title', roleTitle);
   };
 
   const getCandidateStatus = (name, role) => {
@@ -1169,24 +1206,50 @@ export default function HireIQPro({ session }) {
     ${r.concerns ? `<div class="section"><div class="section-title">Concerns</div>${r.concerns.map(c=>`<div class="list-item"><div class="dot" style="background:#f87171"></div>${c}</div>`).join('')}</div>` : ''}
     ${r.nextSteps ? `<div class="section"><div class="section-title">Next Steps</div>${r.nextSteps.map(s=>`<div class="list-item"><div class="dot" style="background:#38bdf8"></div>${s}</div>`).join('')}</div>` : ''}
     <div class="footer">Generated by HireIQ Pro · hireiq-inky.vercel.app · ${new Date().toLocaleDateString()}</div>
+    <div style="text-align:center;margin-top:20px">
+      <button onclick="window.print()" style="padding:10px 24px;background:#38bdf8;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;color:#000">
+        🖨 Print / Save as PDF
+      </button>
+    </div>
+    <style>@media print{button{display:none!important}body{padding:20px}}</style>
     </body></html>`;
 
     const blob = new Blob([html], {type:'text/html'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `HireIQ-${candidate.name.replace(/\s/g,'-')}-Scorecard.html`;
+    a.download = `HireIQ-${candidate.name.replace(/ /g,'-')}-Scorecard.html`;
     a.click();
     URL.revokeObjectURL(url);
     showToast(`✓ Scorecard exported for ${candidate.name}`);
   };
 
   // Template apply
+  const TEMPLATE_JDS = {
+    frontend: "We are looking for a Frontend Engineer to build high-quality web applications. The ideal candidate has strong JavaScript/TypeScript skills, experience with React or similar frameworks, an eye for UI/UX, and understands performance optimization and accessibility.",
+    backend: "We are looking for a Backend Engineer to design and build scalable server-side systems. The ideal candidate has strong experience with system design, RESTful APIs, database architecture, and at least one backend language such as Python, Node.js, or Go.",
+    fullstack: "We are looking for a Full Stack Engineer to work across our entire codebase. The ideal candidate is comfortable with both frontend and backend development, databases, and can take features from design to production independently.",
+    ml: "We are looking for a Machine Learning Engineer to build and deploy ML models at scale. The ideal candidate has strong Python skills, experience with TensorFlow or PyTorch, MLOps practices, and the ability to work closely with data and product teams.",
+    devops: "We are looking for a DevOps/SRE Engineer to own our infrastructure and reliability. The ideal candidate has experience with cloud platforms, CI/CD pipelines, infrastructure as code, and incident response.",
+    product: "We are looking for a Product Manager to define and execute our product roadmap. The ideal candidate has strong product sense, data-driven decision making, excellent communication skills, and experience working with engineering and design teams.",
+    designer: "We are looking for a UX/Product Designer to craft exceptional user experiences. The ideal candidate has a strong portfolio, experience with user research, proficiency in Figma, and the ability to collaborate closely with engineering.",
+    ae: "We are looking for an Account Executive to drive new business revenue. The ideal candidate has a proven track record of closing B2B deals, strong communication and negotiation skills, and experience with CRM tools like Salesforce.",
+    sdr: "We are looking for an SDR/BDR to generate and qualify pipeline for our sales team. The ideal candidate is resilient, highly organized, and has strong written and verbal communication skills.",
+    da: "We are looking for a Data Analyst with strong SQL skills, experience in data visualization tools like Tableau or Power BI, and the ability to translate complex data into actionable business insights.",
+    ds: "We are looking for a Data Scientist to build statistical models and drive data-informed decisions. The ideal candidate has strong Python or R skills, experience with machine learning, and excellent communication skills.",
+    em: "We are looking for an Engineering Manager to lead and grow our engineering team. The ideal candidate has strong technical depth, experience managing engineers, excellent communication skills, and a track record of shipping high-quality products.",
+  };
+
   const applyTemplate = (template) => {
     setRoleSkills([...template.skills]);
-    setRoleForm(f => ({...f, title: f.title || template.title}));
+    const suggestedJD = TEMPLATE_JDS[template.id] || "";
+    setRoleForm(f => ({
+      ...f,
+      title: f.title || template.title,
+      job_description: f.job_description || suggestedJD
+    }));
     setShowTemplates(false);
-    showToast(`✓ "${template.title}" template applied`);
+    showToast(`✓ "${template.title}" template applied with starter JD`);
   };
 
   /* ── INTERVIEW ── */
@@ -1504,7 +1567,6 @@ Return EXACTLY this JSON:
             {[
               {id:"roles",   label:"Open Roles", icon:"📋"},
               {id:"analyze", label:"Analyze Interview", icon:"⚡"},
-              {id:"compare", label:"Compare Candidates", icon:"⚖️"},
               {id:"pipeline",label:"Pipeline", icon:"📊"},
             ].map(t=>(
               <button key={t.id} className={`nav-tab ${tab===t.id?"active":""}`} onClick={()=>setTab(t.id)}>
@@ -1599,7 +1661,10 @@ Return EXACTLY this JSON:
                 <div className="field">
                   <label className="label">Interview Round <span className="setup-optional">optional</span></label>
                   <select className="sel inp" value={interviewContext.roundNumber}
-                    onChange={e=>setInterviewContext(c=>({...c,roundNumber:e.target.value}))}>
+                    onChange={e=>{
+                      setInterviewContext(c=>({...c,roundNumber:e.target.value}));
+                      localStorage.setItem('hireiq_last_round', e.target.value);
+                    }}>
                     <option value="1">Round 1 — Initial Screen</option>
                     <option value="2">Round 2 — Deep Dive</option>
                     <option value="3">Round 3 — Final</option>
@@ -1668,9 +1733,11 @@ Return EXACTLY this JSON:
                     <div className="question-text">{questions[currentQ].question}</div>
 
                     {questions[currentQ].hint && (
-                      <div className="question-hint">
-                        <span style={{color:"var(--hi)",fontWeight:600,fontSize:10,fontFamily:"var(--mono)",letterSpacing:1,display:"block",marginBottom:4}}>✓ WHAT A STRONG ANSWER INCLUDES:</span>
-                        <span style={{fontSize:13,color:"var(--text)",lineHeight:1.7}}>{questions[currentQ].hint}</span>
+                      <div className="question-hint" style={{fontSize:13,lineHeight:1.8}}>
+                        <span style={{color:"var(--green)",fontWeight:700,fontSize:10,fontFamily:"var(--mono)",letterSpacing:1,display:"block",marginBottom:8,borderBottom:"1px solid var(--line)",paddingBottom:6}}>
+                          ✓ WHAT A STRONG ANSWER INCLUDES
+                        </span>
+                        <span style={{color:"var(--text)"}}>{questions[currentQ].hint}</span>
                       </div>
                     )}
 
@@ -1701,6 +1768,15 @@ Return EXACTLY this JSON:
                     </div>
 
                     <div className="interview-nav">
+                      {currentQ > 0 && (
+                        <button className="skip-btn" onClick={()=>{
+                          setCurrentQ(q=>q-1);
+                          const prev = answers[answers.length-1];
+                          setCurrentRating(prev?.rating||0);
+                          setCurrentNote(prev?.note||"");
+                          setAnswers(a=>a.slice(0,-1));
+                        }}>← Back</button>
+                      )}
                       <button className="skip-btn" onClick={()=>{setCurrentRating(3);setCurrentNote("Skipped");submitAnswer();}}>Skip</button>
                       <button className="next-btn" disabled={currentRating===0} onClick={submitAnswer}>
                         {currentQ+1 >= questions.length ? "🎯 Generate Scorecard" : "Next Question →"}
@@ -2148,9 +2224,20 @@ Return EXACTLY this JSON:
           <div className="pipeline-view">
             <div className="pipeline-head">
               <span className="pipeline-title">Hiring Pipeline</span>
-              <span style={{font:"400 12px var(--font)",color:"var(--sub)"}}>
-                {roles.filter(r=>r.status==="active").length} active roles
-              </span>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <span style={{font:"400 12px var(--font)",color:"var(--sub)"}}>
+                  {roles.filter(r=>r.status==="active").length} active roles
+                </span>
+                <select className="sel inp" style={{padding:"4px 10px",fontSize:11,width:"auto",fontFamily:"var(--mono)"}}
+                  value={pipelineSort||"score"}
+                  onChange={e=>setPipelineSort(e.target.value)}>
+                  <option value="score">Sort: Score ↓</option>
+                  <option value="score_asc">Sort: Score ↑</option>
+                  <option value="name">Sort: Name A-Z</option>
+                  <option value="status">Sort: Status</option>
+                  <option value="verdict">Sort: Verdict</option>
+                </select>
+              </div>
             </div>
 
             {roles.filter(r=>r.candidates_count>0||r.status==="active").length === 0 ? (
@@ -2165,7 +2252,18 @@ Return EXACTLY this JSON:
               <div className="pipeline-role-list">
                 {roles.filter(r=>r.status==="active").map(role=>{
                   const isExpanded = expandedPipelineRole === role.id;
-                  const roleCands = candidates.filter(c=>c.role===role.title);
+                  const sortCandidates = (cands) => {
+                    const s = pipelineSort || 'score';
+                    return [...cands].sort((a,b) => {
+                      if (s==='score') return b.score-a.score;
+                      if (s==='score_asc') return a.score-b.score;
+                      if (s==='name') return a.name.localeCompare(b.name);
+                      if (s==='status') return (getCandidateStatus(a.name,a.role)).localeCompare(getCandidateStatus(b.name,b.role));
+                      if (s==='verdict') return (a.verdict||'').localeCompare(b.verdict||'');
+                      return 0;
+                    });
+                  };
+                  const roleCands = sortCandidates(candidates.filter(c=>c.role===role.title));
                   const vc_top = roleCands.length > 0 ? VERDICT_COLORS[roleCands.sort((a,b)=>b.score-a.score)[0]?.verdict]||VERDICT_COLORS["Borderline"] : null;
                   return (
                     <div key={role.id}>
