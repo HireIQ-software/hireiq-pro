@@ -1,16 +1,18 @@
 export default async function handler(req, res) {
-  // Only allow POST
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { prompt } = req.body;
+  const { prompt, mode } = req.body;
 
   if (!prompt) {
     return res.status(400).json({ error: "Missing prompt" });
   }
 
   try {
+    // Use higher temperature for interview questions to get varied, creative output
+    const temperature = mode === "questions" ? 0.8 : 0.3;
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
@@ -18,7 +20,7 @@ export default async function handler(req, res) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 4000, temperature: 0.3 },
+          generationConfig: { maxOutputTokens: 4000, temperature },
         }),
       }
     );
@@ -26,9 +28,11 @@ export default async function handler(req, res) {
     const data = await response.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
     const clean = text.replace(/```json|```/g, "").trim();
-    const parsed = JSON.parse(clean);
 
-    return res.status(200).json(parsed);
+    // Always return raw text for frontend to parse
+    // This avoids issues with arrays vs objects
+    return res.status(200).json({ raw: clean });
+
   } catch (err) {
     return res.status(500).json({ error: "Analysis failed", detail: err.message });
   }

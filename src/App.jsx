@@ -1345,25 +1345,19 @@ Return ONLY a valid JSON array, no markdown, no explanation:
       const res = await fetch("/api/analyze", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({prompt})
+        body:JSON.stringify({prompt, mode:"questions"})
       });
       const data = await res.json();
 
-      // Extract raw text from whatever shape the response is
-      let text = "";
-      if (typeof data === "string") text = data;
-      else if (Array.isArray(data)) text = JSON.stringify(data);
-      else text = JSON.stringify(data);
-
-      // Find the JSON array in the text
-      const clean = text.replace(/```json|```/g, "").trim();
-      const arrStart = clean.indexOf("[");
-      const arrEnd = clean.lastIndexOf("]");
+      // Backend now returns { raw: "..." }
+      const raw = data.raw || (typeof data === "string" ? data : JSON.stringify(data));
+      const arrStart = raw.indexOf("[");
+      const arrEnd = raw.lastIndexOf("]");
 
       let parsed = null;
       if (arrStart !== -1 && arrEnd !== -1) {
-        try { parsed = JSON.parse(clean.slice(arrStart, arrEnd + 1)); }
-        catch(e) { console.error("Question parse error:", e, clean.slice(arrStart, arrStart+200)); }
+        try { parsed = JSON.parse(raw.slice(arrStart, arrEnd + 1)); }
+        catch(e) { console.error("Question parse error:", e, raw.slice(arrStart, arrStart+300)); }
       }
 
       if (Array.isArray(parsed) && parsed.length > 0) {
@@ -1479,7 +1473,10 @@ Return EXACTLY this JSON:
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-      setResult(data);
+      const raw = data.raw || JSON.stringify(data);
+      const clean2 = raw.replace(/```json|```/g,"").trim();
+      const parsed2 = JSON.parse(clean2);
+      setResult(parsed2);
       setForm(f=>({...f,candidate:interviewCandidate}));
       await incrementUsage();
       const matchedRole = roles.find(r=>r.title===selectedRole.title&&r.status==='active');
@@ -1554,7 +1551,11 @@ Return EXACTLY this JSON:
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-      setResult(data);
+      // Backend returns { raw: "..." } — parse it
+      const raw = data.raw || JSON.stringify(data);
+      const clean = raw.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+      setResult(parsed);
       await incrementUsage();
       // Increment role candidate count if a role is loaded
       const matchedRole = roles.find(r => r.title === form.role && r.status === 'active');
