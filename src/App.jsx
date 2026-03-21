@@ -1085,6 +1085,7 @@ export default function HireIQPro({ session }) {
   const [brandingSaved, setBrandingSaved] = useState(false);
   const [activeDetailTab, setActiveDetailTab] = useState("scorecard");
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [tourStep, setTourStep] = useState(0);
   const [pipelineSearch, setPipelineSearch] = useState("");
   const [confirmDialog, setConfirmDialog] = useState(null);
   const [dbCandidates, setDbCandidates] = useState([]);
@@ -1228,11 +1229,17 @@ export default function HireIQPro({ session }) {
     loadTeam();
     loadReferral();
     loadNotifSettings();
-    // Show onboarding for new users
-    const hasSeenOnboarding = localStorage.getItem('hireiq_onboarded');
-    if (!hasSeenOnboarding) {
-      setTimeout(() => setShowOnboarding(true), 800);
-    }
+    // Show tour only for brand new users (created_at within last 3 minutes)
+    const checkOnboarding = async () => {
+      const hasSeenOnboarding = localStorage.getItem('hireiq_onboarded');
+      if (!hasSeenOnboarding) {
+        const { data: prof } = await supabase.from('profiles').select('created_at').eq('id', session.user.id).single();
+        const isNew = prof && (Date.now() - new Date(prof.created_at).getTime()) < 3 * 60 * 1000;
+        if (isNew) setTimeout(() => { setShowOnboarding(true); setTourStep(0); }, 800);
+        else localStorage.setItem('hireiq_onboarded', 'true');
+      }
+    };
+    checkOnboarding();
   }, [session]);
 
   const autoDetectRoleSkills = (title, seniority) => {
@@ -1513,13 +1520,15 @@ ${emailBranding.email_signature}` : ""}`);
 
   const createTeam = async () => {
     if (!teamName.trim()) return;
-    const { data } = await supabase.from('teams').insert({
-      name: teamName, owner_id: session.user.id
+    const { data, error } = await supabase.from('teams').insert({
+      name: teamName.trim(), owner_id: session.user.id
     }).select().single();
+    if (error) { console.error('Team create error:', error); showToast("⚠ " + error.message); return; }
     if (data) {
-      await supabase.from('team_members').insert({
+      const { error: memberError } = await supabase.from('team_members').insert({
         team_id: data.id, user_id: session.user.id, role: 'owner'
       });
+      if (memberError) console.error('Member insert error:', memberError);
       await supabase.from('profiles').update({ team_id: data.id }).eq('id', session.user.id);
       setTeam(data);
       setTeamMembers([{ user_id: session.user.id, role: 'owner', profiles: { full_name: profile?.full_name, email: session.user.email } }]);
@@ -3679,24 +3688,43 @@ ${emailBranding.email_signature}`:""}`}
             <div className="settings-section">
               <div className="settings-section-title">🔔 Notifications</div>
               <div className="settings-section-sub">
-                Get notified when a scorecard is generated. Enter an email or a Slack webhook URL.
+                Get notified when a scorecard is generated. Toggle on/off and save your preferences.
               </div>
+
+              {/* Email toggle row */}
               <div className="notif-toggle-row">
                 <div className="notif-toggle-info">
                   <div className="notif-toggle-title">Email Notifications</div>
-                  <div className="notif-toggle-sub">Send scorecard summary to an email address</div>
+                  <div className="notif-toggle-sub">Send scorecard summary to an email after each analysis</div>
                 </div>
+                <button className={`toggle-switch ${notifyEmail && notifyOnAnalysis ? "on" : ""}`}
+                  onClick={()=>setNotifyOnAnalysis(v=>!v)}>
+                  <div className="toggle-knob"/>
+                </button>
               </div>
               <div className="field" style={{marginBottom:12}}>
                 <label className="label">Notify Email</label>
-                <input className="inp" placeholder="hiring-manager@company.com"
-                  value={notifyEmail} onChange={e=>setNotifyEmail(e.target.value)}/>
+                <div style={{display:"flex",gap:8}}>
+                  <input className="inp" placeholder="hiring-manager@company.com"
+                    value={notifyEmail} onChange={e=>setNotifyEmail(e.target.value)}/>
+                  <button className="save-settings-btn" style={{margin:0,padding:"9px 14px",fontSize:12,whiteSpace:"nowrap"}}
+                    onClick={saveNotifSettings}>
+                    {notifySaved?"✓ Saved":"Save"}
+                  </button>
+                </div>
+                {notifyEmail && <div style={{fontSize:11,color:"var(--green)",marginTop:4}}>✓ Notifications will be sent to {notifyEmail}</div>}
               </div>
+
+              {/* Slack toggle row */}
               <div className="notif-toggle-row">
                 <div className="notif-toggle-info">
                   <div className="notif-toggle-title">Slack Notifications</div>
-                  <div className="notif-toggle-sub">Post scorecard to a Slack channel via webhook</div>
+                  <div className="notif-toggle-sub">Post scorecard summary to a Slack channel via webhook</div>
                 </div>
+                <button className={`toggle-switch ${notifySlack ? "on" : ""}`}
+                  onClick={()=>{ if(!notifySlack) showToast("Enter a Slack webhook URL first"); }}>
+                  <div className="toggle-knob"/>
+                </button>
               </div>
               <div className="field" style={{marginBottom:8}}>
                 <label className="label">Slack Webhook URL</label>
@@ -3704,12 +3732,12 @@ ${emailBranding.email_signature}`:""}`}
                   <input className="inp" placeholder="https://hooks.slack.com/services/..."
                     value={notifySlack} onChange={e=>setNotifySlack(e.target.value)}/>
                   <button className="webhook-test-btn" onClick={testSlackWebhook}>Test</button>
+                  <button className="save-settings-btn" style={{margin:0,padding:"9px 14px",fontSize:12,whiteSpace:"nowrap"}}
+                    onClick={saveNotifSettings}>
+                    {notifySaved?"✓ Saved":"Save"}
+                  </button>
                 </div>
-              </div>
-              <div style={{display:"flex",gap:8,marginTop:4}}>
-                <button className="save-settings-btn" onClick={saveNotifSettings}>
-                  {notifySaved ? "✓ Saved!" : "Save Notifications"}
-                </button>
+                {notifySlack && <div style={{fontSize:11,color:"var(--green)",marginTop:4}}>✓ Slack webhook configured</div>}
               </div>
             </div>
 
@@ -3907,48 +3935,87 @@ ${emailBranding.email_signature}`:""}`}
           </div>
         )}
 
-        {/* ── ONBOARDING ── */}
-        {showOnboarding && (
-          <div className="onboard-overlay">
-            <div className="onboard-card">
-              <div className="onboard-icon">🎯</div>
-              <div className="onboard-title">Welcome to HireIQ Pro</div>
-              <div className="onboard-sub">
-                The AI-powered interview platform that turns raw conversations into structured hiring decisions. Here's how to get started:
+        {/* ── TOUR ── */}
+        {showOnboarding && (() => {
+          const TOUR_STEPS = [
+            {
+              icon:"🎯",
+              title:"Welcome to HireIQ Pro",
+              sub:"You're 3 steps away from your first AI-powered interview scorecard. Let's get you set up.",
+              highlight:null,
+              action:"Let's Go →",
+            },
+            {
+              icon:"📋",
+              title:"Step 1 — Create a Role",
+              sub:"Every interview starts with a role. Define the job title, seniority, and paste the job description once — it's reused for every candidate you interview for that role.",
+              tip:"💡 Use a template to fill in skills and a starter JD instantly.",
+              highlight:"Open Roles",
+              action:"Got it →",
+            },
+            {
+              icon:"🎤",
+              title:"Step 2 — Interview Candidates",
+              sub:"Select your role, enter the candidate's name, and click Start Guided Interview. The AI generates tailored questions based on the role, seniority, and JD in real time.",
+              tip:"💡 Rate each answer 1–5. The AI scores independently and flags contradictions.",
+              highlight:"Analyze Interview",
+              action:"Got it →",
+            },
+            {
+              icon:"📊",
+              title:"Step 3 — Track Your Pipeline",
+              sub:"Save scorecards to Pipeline. Compare candidates side by side, export PDF scorecards, track status from Interviewed → Offer → Hired.",
+              tip:"💡 Use the Bias Report in Settings to check your hiring patterns.",
+              highlight:"Pipeline",
+              action:"Start Hiring →",
+            },
+          ];
+          const step = TOUR_STEPS[tourStep];
+          const isLast = tourStep === TOUR_STEPS.length - 1;
+          return (
+            <div className="onboard-overlay" onClick={()=>{
+              if(isLast){setShowOnboarding(false);localStorage.setItem('hireiq_onboarded','true');setTab('roles');}
+            }}>
+              <div className="onboard-card" onClick={e=>e.stopPropagation()} style={{position:"relative"}}>
+                {/* Progress dots */}
+                <div style={{display:"flex",gap:6,justifyContent:"center",marginBottom:20}}>
+                  {TOUR_STEPS.map((_,i)=>(
+                    <div key={i} style={{
+                      width: i===tourStep?20:6, height:6, borderRadius:3,
+                      background:i===tourStep?"var(--hi)":"var(--line2)",
+                      transition:"all .3s"
+                    }}/>
+                  ))}
+                </div>
+                <div className="onboard-icon">{step.icon}</div>
+                <div className="onboard-title">{step.title}</div>
+                <div className="onboard-sub">{step.sub}</div>
+                {step.tip && (
+                  <div style={{background:"rgba(56,189,248,.06)",border:"1px solid rgba(56,189,248,.15)",borderRadius:8,padding:"10px 14px",fontSize:12.5,color:"var(--sub)",lineHeight:1.6,marginBottom:8,textAlign:"left"}}>
+                    {step.tip}
+                  </div>
+                )}
+                <div style={{display:"flex",gap:10,alignItems:"center",justifyContent:"space-between",marginTop:8}}>
+                  <button style={{background:"none",border:"none",color:"var(--sub)",font:"400 12px var(--font)",cursor:"pointer"}}
+                    onClick={()=>{setShowOnboarding(false);localStorage.setItem('hireiq_onboarded','true');}}>
+                    Skip tour
+                  </button>
+                  <button className="onboard-btn" onClick={()=>{
+                    if(isLast){
+                      setShowOnboarding(false);
+                      localStorage.setItem('hireiq_onboarded','true');
+                      setTab('roles');
+                    } else {
+                      setTourStep(s=>s+1);
+                    }
+                  }}>
+                    {step.action}
+                  </button>
+                </div>
               </div>
-              <div className="onboard-steps">
-                <div className="onboard-step">
-                  <div className="onboard-step-num">1</div>
-                  <div className="onboard-step-text">
-                    <span className="onboard-step-title">📋 Create a Role</span>
-                    Go to Open Roles → click New Role → define the job title, seniority, and paste the job description. Use a template to get started instantly.
-                  </div>
-                </div>
-                <div className="onboard-step">
-                  <div className="onboard-step-num">2</div>
-                  <div className="onboard-step-text">
-                    <span className="onboard-step-title">🎤 Interview Candidates</span>
-                    Select your role → click Analyze → enter candidate name → Start Guided Interview. AI generates tailored questions in real time.
-                  </div>
-                </div>
-                <div className="onboard-step">
-                  <div className="onboard-step-num">3</div>
-                  <div className="onboard-step-text">
-                    <span className="onboard-step-title">📊 Track Your Pipeline</span>
-                    Save scorecards to Pipeline → compare candidates side by side → track status from Interviewed to Hired.
-                  </div>
-                </div>
-              </div>
-              <button className="onboard-btn" onClick={()=>{
-                setShowOnboarding(false);
-                localStorage.setItem('hireiq_onboarded','true');
-                setTab('roles');
-              }}>
-                Create My First Role →
-              </button>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ── CONFIRM DIALOG ── */}
         {confirmDialog && (
