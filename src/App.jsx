@@ -1104,6 +1104,7 @@ export default function HireIQPro({ session }) {
   const [referralCount, setReferralCount] = useState(0);
   const [referralBonus, setReferralBonus] = useState(0);
   const [copiedReferral, setCopiedReferral] = useState(false);
+  const [lightTheme, setLightTheme] = useState(() => localStorage.getItem('hireiq_theme') === 'light');
   const [showTemplates, setShowTemplates] = useState(false);
   const [templateSearch, setTemplateSearch] = useState("");
 
@@ -2215,6 +2216,25 @@ Return EXACTLY this JSON:
   return (
     <>
       <style>{FONTS}{CSS}</style>
+      <style>{lightTheme ? `
+        :root {
+          --ink:#f8fafc; --ink2:#ffffff; --ink3:#f1f5f9;
+          --line:#e2e8f0; --line2:#cbd5e1;
+          --text:#0f172a; --sub:#64748b; --dim:#94a3b8;
+          --hi:#0284c7; --hi2:#6366f1;
+          --green:#16a34a; --amber:#d97706; --rose:#dc2626;
+          --violet:#7c3aed;
+        }
+        .nav{background:#ffffff;border-bottom:1px solid #e2e8f0}
+        .left-col{background:#f8fafc}
+        .right-col{background:#f1f5f9}
+        .inp,.sel,.note-area,.add-skill-inp,.templates-search,.pipeline-search{background:#ffffff;color:#0f172a;border-color:#cbd5e1}
+        .inp::placeholder,.note-area::placeholder,.add-skill-inp::placeholder{color:#94a3b8}
+        .question-card,.score-card,.info-card,.card,.email-card,.hero-score{background:#ffffff;border-color:#e2e8f0}
+        .modal{background:#ffffff}
+        .modal-overlay{background:rgba(0,0,0,.5)}
+        ::-webkit-scrollbar-thumb{background:#cbd5e1}
+      ` : ''}</style>
       <div className="shell">
 
         {/* NAV */}
@@ -2282,6 +2302,14 @@ Return EXACTLY this JSON:
                       </div>
                       <div className="profile-menu-item" onClick={()=>{setShowProfileMenu(false);setTab("pipeline");}}>
                         📊 My Pipeline
+                      </div>
+                      <div className="profile-menu-item" onClick={()=>{
+                        const newTheme = !lightTheme;
+                        setLightTheme(newTheme);
+                        localStorage.setItem('hireiq_theme', newTheme ? 'light' : 'dark');
+                        setShowProfileMenu(false);
+                      }}>
+                        {lightTheme ? "🌙 Dark Mode" : "☀️ Light Mode"}
                       </div>
                       <div className="profile-menu-item" onClick={()=>{setShowProfileMenu(false);setTab("roles");}}>
                         📋 Open Roles
@@ -3830,6 +3858,24 @@ ${emailBranding.email_signature}`:""}`}
                   )}
                 </div>
               )}
+            </div>
+
+            {/* Appearance */}
+            <div className="settings-section">
+              <div className="settings-section-title">🎨 Appearance</div>
+              <div className="settings-section-sub">Choose your preferred theme.</div>
+              <div style={{display:"flex",gap:10}}>
+                <button onClick={()=>{setLightTheme(false);localStorage.setItem('hireiq_theme','dark');}}
+                  style={{flex:1,padding:"12px",border:`2px solid ${!lightTheme?"var(--hi)":"var(--line2)"}`,borderRadius:9,background:!lightTheme?"rgba(56,189,248,.08)":"var(--ink3)",cursor:"pointer",transition:".15s"}}>
+                  <div style={{fontSize:20,marginBottom:6}}>🌙</div>
+                  <div style={{font:"600 13px var(--font)",color:!lightTheme?"var(--hi)":"var(--sub)"}}>Dark Mode</div>
+                </button>
+                <button onClick={()=>{setLightTheme(true);localStorage.setItem('hireiq_theme','light');}}
+                  style={{flex:1,padding:"12px",border:`2px solid ${lightTheme?"var(--hi)":"var(--line2)"}`,borderRadius:9,background:lightTheme?"rgba(56,189,248,.08)":"var(--ink3)",cursor:"pointer",transition:".15s"}}>
+                  <div style={{fontSize:20,marginBottom:6}}>☀️</div>
+                  <div style={{font:"600 13px var(--font)",color:lightTheme?"var(--hi)":"var(--sub)"}}>Light Mode</div>
+                </button>
+              </div>
             </div>
 
             {/* Account Info */}
