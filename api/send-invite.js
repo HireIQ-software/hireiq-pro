@@ -8,19 +8,19 @@ export default async function handler(req, res) {
   const serviceKey = process.env.SUPABASE_SERVICE_KEY;
   const appUrl = 'https://hireiq-inky.vercel.app';
 
-  try {
-    if (!serviceKey) {
-      // No service key — return manual invite link
-      return res.status(200).json({
-        success: true,
-        inviteLink: `${appUrl}?team=${teamId}`,
-        manual: true
-      });
-    }
+  if (!serviceKey) {
+    return res.status(200).json({
+      success: true,
+      inviteLink: `${appUrl}?team=${teamId}`,
+      manual: true,
+      reason: "No service key configured"
+    });
+  }
 
-    // First check if user already exists
+  try {
+    // Check if user already exists
     const listRes = await fetch(
-      `${supabaseUrl}/auth/v1/admin/users?email=${encodeURIComponent(email)}`,
+      `${supabaseUrl}/auth/v1/admin/users?page=1&per_page=1000`,
       {
         headers: {
           "apikey": serviceKey,
@@ -32,8 +32,7 @@ export default async function handler(req, res) {
     const existingUser = listData?.users?.find(u => u.email === email);
 
     if (existingUser) {
-      // User already exists — just add them to the team directly
-      // Update their team_id in profiles
+      // User exists — add directly to team
       await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${existingUser.id}`, {
         method: 'PATCH',
         headers: {
@@ -44,7 +43,6 @@ export default async function handler(req, res) {
         body: JSON.stringify({ team_id: teamId })
       });
 
-      // Add to team_members
       await fetch(`${supabaseUrl}/rest/v1/team_members`, {
         method: 'POST',
         headers: {
@@ -64,11 +62,11 @@ export default async function handler(req, res) {
       return res.status(200).json({
         success: true,
         existing: true,
-        message: `${email} already has a HireIQ account and has been added to your team directly.`
+        message: `${email} already has a HireIQ account and has been added to your team.`
       });
     }
 
-    // New user — send invite email
+    // New user — send invite
     const inviteRes = await fetch(`${supabaseUrl}/auth/v1/invite`, {
       method: "POST",
       headers: {
@@ -78,36 +76,28 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         email,
-        data: {
-          team_id: teamId,
-          team_name: teamName,
-          invited_by: inviterName
-        }
+        data: { team_id: teamId, team_name: teamName, invited_by: inviterName }
       })
     });
 
     const inviteData = await inviteRes.json();
+    console.log('Invite response:', JSON.stringify(inviteData));
 
-    if (inviteData.error || inviteData.msg) {
-      const errMsg = inviteData.error?.message || inviteData.msg || "Unknown error";
-
-      // Rate limited — return manual link as fallback
-      if (errMsg.includes('rate') || errMsg.includes('already') || inviteRes.status === 422) {
-        return res.status(200).json({
-          success: true,
-          inviteLink: `${appUrl}?team=${teamId}`,
-          manual: true,
-          reason: errMsg
-        });
-      }
-      throw new Error(errMsg);
+    if (!inviteRes.ok) {
+      const errMsg = inviteData.error?.message || inviteData.msg || `HTTP ${inviteRes.status}`;
+      // Return fallback link
+      return res.status(200).json({
+        success: true,
+        inviteLink: `${appUrl}?team=${teamId}`,
+        manual: true,
+        reason: errMsg
+      });
     }
 
     return res.status(200).json({ success: true });
 
   } catch (err) {
-    console.error('Send invite error:', err);
-    // Always return a usable invite link as fallback
+    console.error('Send invite error:', err.message);
     return res.status(200).json({
       success: true,
       inviteLink: `${appUrl}?team=${teamId}`,

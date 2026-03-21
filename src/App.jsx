@@ -1505,18 +1505,34 @@ ${emailBranding.email_signature}` : ""}`);
 
   // Team
   const loadTeam = async () => {
+    // Step 1: Get team membership
     const { data: membership } = await supabase
       .from('team_members').select('team_id').eq('user_id', session.user.id).single();
-    if (membership) {
-      const { data: teamData } = await supabase
-        .from('teams').select('*').eq('id', membership.team_id).single();
-      if (teamData) setTeam(teamData);
-      const { data: members } = await supabase
-        .from('team_members')
-        .select('*, profiles(full_name, email, plan)')
-        .eq('team_id', membership.team_id);
-      if (members) setTeamMembers(members);
-    }
+    if (!membership) return;
+
+    // Step 2: Get team info
+    const { data: teamData } = await supabase
+      .from('teams').select('*').eq('id', membership.team_id).single();
+    if (teamData) setTeam(teamData);
+
+    // Step 3: Get members WITHOUT join (avoid FK issue)
+    const { data: members } = await supabase
+      .from('team_members').select('user_id, role, status')
+      .eq('team_id', membership.team_id);
+    if (!members) return;
+
+    // Step 4: Get profiles for each member separately
+    const memberIds = members.map(m => m.user_id);
+    const { data: profiles } = await supabase
+      .from('profiles').select('id, full_name, email, plan')
+      .in('id', memberIds);
+
+    // Step 5: Merge manually
+    const merged = members.map(m => ({
+      ...m,
+      profiles: profiles?.find(p => p.id === m.user_id) || { email: 'Loading...', full_name: '' }
+    }));
+    setTeamMembers(merged);
   };
 
   const createTeam = async () => {
