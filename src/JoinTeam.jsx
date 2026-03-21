@@ -28,62 +28,101 @@ html,body,#root{height:100%;background:var(--ink);color:var(--text);font-family:
 .success{background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);border-radius:8px;padding:16px;font-size:13px;color:var(--green);text-align:center;line-height:1.6}
 `;
 
-export default function JoinTeam({ teamId, onDone }) {
+export default function JoinTeam({ onDone }) {
   const [teamInfo, setTeamInfo] = useState(null);
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [teamId, setTeamId] = useState(null);
 
   useEffect(() => {
-    // Load team info
-    const loadTeam = async () => {
-      const { data } = await supabase.from('teams').select('name').eq('id', teamId).single();
-      if (data) setTeamInfo(data);
+    const init = async () => {
+      // Get current session (Supabase auto-signs in from invite link)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      setCurrentUser(user);
+
+      // Get team_id from user metadata (set when invite was sent)
+      const metaTeamId = user.user_metadata?.team_id;
+
+      // Also check URL params
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlTeamId = urlParams.get('team');
+
+      const resolvedTeamId = metaTeamId || urlTeamId;
+      setTeamId(resolvedTeamId);
+
+      // Load team info
+      if (resolvedTeamId) {
+        const { data } = await supabase
+          .from('teams').select('name').eq('id', resolvedTeamId).single();
+        if (data) setTeamInfo(data);
+      }
+
+      // Pre-fill name if already set
+      if (user.user_metadata?.full_name) {
+        setName(user.user_metadata.full_name);
+      }
     };
-    if (teamId) loadTeam();
-  }, [teamId]);
+    init();
+  }, []);
 
   const handleJoin = async () => {
     setError("");
     if (!name.trim()) { setError("Please enter your name."); return; }
     if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
     setLoading(true);
+
     try {
-      // Update user profile with name and password
-      const { error: pwErr } = await supabase.auth.updateUser({ password });
+      const user = currentUser;
+      if (!user) throw new Error("No session found. Please try the invite link again.");
+
+      // Step 1: Set password
+      const { error: pwErr } = await supabase.auth.updateUser({
+        password,
+        data: { full_name: name.trim() }
+      });
       if (pwErr) throw pwErr;
 
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No user found");
-
-      // Update profile
-      await supabase.from('profiles').upsert({
+      // Step 2: Create/update profile with name
+      const { error: profileErr } = await supabase.from('profiles').upsert({
         id: user.id,
         email: user.email,
         full_name: name.trim(),
         plan: 'free',
         analyses_used: 0,
         analyses_limit: 10,
+        last_reset_month: new Date().getMonth(),
+        last_reset_year: new Date().getFullYear(),
       }, { onConflict: 'id' });
+      if (profileErr) console.error('Profile error:', profileErr);
 
-      // Add to team
+      // Step 3: Add to team
       if (teamId) {
-        await supabase.from('team_members').upsert({
+        const { error: memberErr } = await supabase.from('team_members').upsert({
           team_id: teamId,
           user_id: user.id,
           role: 'member',
+          status: 'active',
         }, { onConflict: 'team_id,user_id' });
+        if (memberErr) console.error('Member error:', memberErr);
 
+        // Update profile with team_id
         await supabase.from('profiles')
           .update({ team_id: teamId })
           .eq('id', user.id);
       }
 
       setSuccess(true);
-      setTimeout(() => onDone(), 2000);
+      // Clean URL and go to app after 2s
+      setTimeout(() => {
+        window.history.replaceState({}, document.title, '/');
+        onDone();
+      }, 2000);
+
     } catch (err) {
       setError(err.message);
     }
@@ -103,38 +142,47 @@ export default function JoinTeam({ teamId, onDone }) {
           {teamInfo && (
             <div className="team-badge">
               <div className="team-name">👥 {teamInfo.name}</div>
-              <div className="team-sub">You've been invited to join this team</div>
+              <div className="team-sub">You've been invited to join this team on HireIQ</div>
             </div>
           )}
 
           {success ? (
             <div className="success">
-              ✓ Welcome to the team!<br/>
+              ✓ You've joined the team!<br/>
               <span style={{fontSize:12,opacity:.7}}>Taking you to HireIQ...</span>
             </div>
           ) : (
             <>
               <div className="title">Complete Your Account</div>
-              <div className="sub">Set your name and password to join {teamInfo?.name || "the team"}</div>
+              <div className="sub">
+                Set your name and password to join {teamInfo?.name || "the team"}
+              </div>
 
               {error && <div className="error">⚠ {error}</div>}
 
               <div className="field">
-                <label className="label">Your Name</label>
-                <input className="inp" placeholder="e.g. Alex Johnson"
-                  value={name} onChange={e => setName(e.target.value)}/>
+                <label className="label">Your Full Name</label>
+                <input className="inp" placeholder="e.g. David Johnson"
+                  value={name} onChange={e => setName(e.target.value)}
+                  autoFocus/>
               </div>
 
               <div className="field">
-                <label className="label">Set Password</label>
+                <label className="label">Set Your Password</label>
                 <input className="inp" type="password" placeholder="Min 6 characters"
                   value={password} onChange={e => setPassword(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && handleJoin()}/>
               </div>
 
-              <button className="btn" onClick={handleJoin} disabled={loading}>
-                {loading ? "⟳ Joining..." : "Join Team →"}
+              <button className="btn" onClick={handleJoin} disabled={loading || !currentUser}>
+                {loading ? "⟳ Setting up your account..." : "Join Team →"}
               </button>
+
+              {!currentUser && (
+                <div style={{fontSize:11,color:"var(--dim)",textAlign:"center"}}>
+                  Loading your invite... if this takes too long, try clicking the invite link again.
+                </div>
+              )}
             </>
           )}
         </div>

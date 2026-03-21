@@ -9,49 +9,53 @@ import { supabase } from './supabase.js'
 function Root() {
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [isReset, setIsReset] = useState(false)
-  const [isInvite, setIsInvite] = useState(false)
-  const [inviteTeamId, setInviteTeamId] = useState(null)
+  const [mode, setMode] = useState('normal') // normal | reset | invite
 
   useEffect(() => {
     const hash = window.location.hash
     const params = new URLSearchParams(window.location.search)
 
-    // Check for team invite (from our send-invite.js)
-    const teamId = params.get('team')
+    // Detect invite from hash (Supabase sets type=invite)
+    const isInviteHash = hash.includes('type=invite')
+    // Detect invite from our custom team param
+    const hasTeamParam = params.get('team')
 
-    // Check for password recovery
-    if (hash.includes('type=recovery')) {
-      setIsReset(true)
+    // Detect password recovery
+    const isRecovery = hash.includes('type=recovery')
+
+    if (isRecovery) {
+      setMode('reset')
       setLoading(false)
       return
     }
 
-    // Check for invite (Supabase sets type=invite in hash)
-    if (hash.includes('type=invite') || teamId) {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
-          // User is logged in from invite link
-          setIsInvite(true)
-          setInviteTeamId(teamId || extractTeamFromMeta(session))
-          setSession(session)
-        }
-        setLoading(false)
-      })
-      return
-    }
-
+    // Get session - handles all cases including invite links
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
+
+      // If user is logged in AND we have invite signals, show join page
+      if (session && (isInviteHash || hasTeamParam)) {
+        setMode('invite')
+      }
+
       setLoading(false)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') { setIsReset(true); return; }
-      if (event === 'USER_UPDATED') { setIsReset(false); }
-      if (event === 'SIGNED_IN' && window.location.hash.includes('type=invite')) {
-        setIsInvite(true)
-        setInviteTeamId(session?.user?.user_metadata?.team_id || null)
+      if (event === 'PASSWORD_RECOVERY') {
+        setMode('reset')
+        setSession(session)
+        return
+      }
+      if (event === 'USER_UPDATED' && mode === 'reset') {
+        setMode('normal')
+      }
+      if (event === 'SIGNED_IN') {
+        const h = window.location.hash
+        const p = new URLSearchParams(window.location.search)
+        if (h.includes('type=invite') || p.get('team')) {
+          setMode('invite')
+        }
       }
       setSession(session)
     })
@@ -59,8 +63,9 @@ function Root() {
     return () => subscription.unsubscribe()
   }, [])
 
-  const extractTeamFromMeta = (session) => {
-    return session?.user?.user_metadata?.team_id || null
+  const handleDone = () => {
+    setMode('normal')
+    window.history.replaceState({}, document.title, '/')
   }
 
   if (loading) return (
@@ -73,19 +78,8 @@ function Root() {
     </div>
   )
 
-  if (isReset) return <ResetPassword onDone={() => {
-    setIsReset(false)
-    window.history.replaceState({}, document.title, '/')
-  }} />
-
-  if (isInvite && session) return <JoinTeam
-    teamId={inviteTeamId}
-    onDone={() => {
-      setIsInvite(false)
-      window.history.replaceState({}, document.title, '/')
-    }}
-  />
-
+  if (mode === 'reset') return <ResetPassword onDone={handleDone} />
+  if (mode === 'invite' && session) return <JoinTeam onDone={handleDone} />
   return session ? <App session={session} /> : <AuthPage />
 }
 

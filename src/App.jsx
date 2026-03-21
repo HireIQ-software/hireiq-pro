@@ -1029,7 +1029,7 @@ function barColor(s){ return s>=75?"var(--green)":s>=50?"var(--amber)":"var(--ro
 
 /* ─── MAIN ──────────────────────────────────────────────────────────────── */
 export default function HireIQPro({ session }) {
-  const [tab, setTab] = useState("analyze");
+  const [tab, setTab] = useState(() => localStorage.getItem('hireiq_tab') || "analyze");
   const [form, setForm] = useState({
     role:"", jd:"", candidate:"", notes:"", seniority:"mid"
   });
@@ -2249,7 +2249,7 @@ Return EXACTLY this JSON:
               {id:"settings", label:"Settings",          icon:"⚙️"},
               ...(profile?.is_admin ? [{id:"admin", label:"Admin", icon:"🛡"}] : []),
             ].map(t=>(
-              <button key={t.id} className={`nav-tab ${tab===t.id?"active":""}`} onClick={()=>setTab(t.id)}>
+              <button key={t.id} className={`nav-tab ${tab===t.id?"active":""}`} onClick={()=>{setTab(t.id);localStorage.setItem('hireiq_tab',t.id);}}>
                 <span className="dot"/>
                 {t.icon} {t.label}
               </button>
