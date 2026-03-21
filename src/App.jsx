@@ -1559,11 +1559,31 @@ ${emailBranding.email_signature}` : ""}`);
         })
       });
       const result = await res.json();
-      if (result.error) throw new Error(result.error);
-      showToast(`✓ Invite sent to ${inviteEmail}`);
+
+      if (result.existing) {
+        // User already exists — added directly
+        showToast(`✓ ${inviteEmail} already has HireIQ and has been added to your team!`);
+        await loadTeam(); // Refresh team members
+      } else if (result.manual || result.inviteLink) {
+        // Rate limited or fallback — show copyable link
+        const link = result.inviteLink;
+        navigator.clipboard.writeText(link).catch(()=>{});
+        setConfirmDialog({
+          title: "Share this invite link",
+          message: `Email couldn't be sent automatically. Share this link with ${inviteEmail} — it's been copied to your clipboard:
+
+${link}`,
+          confirmLabel: "Got it",
+          danger: false,
+          onConfirm: () => setConfirmDialog(null)
+        });
+      } else {
+        showToast(`✓ Invite email sent to ${inviteEmail}`);
+      }
     } catch(e) {
-      // Even if email fails, the invite is saved — show instructions
-      showToast(`✓ Invite saved! Share this link manually: ${window.location.origin}?team=${team.id}`);
+      const link = `${window.location.origin}?team=${team.id}`;
+      navigator.clipboard.writeText(link).catch(()=>{});
+      showToast(`✓ Invite link copied! Share with ${inviteEmail}`);
     }
     setInviteEmail("");
   };
