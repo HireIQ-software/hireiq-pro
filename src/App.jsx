@@ -1539,15 +1539,32 @@ ${emailBranding.email_signature}` : ""}`);
 
   const inviteMember = async () => {
     if (!inviteEmail.trim() || !team) return;
-    const { data } = await supabase.from('team_invites').insert({
+    // Save invite record to DB
+    await supabase.from('team_invites').insert({
       team_id: team.id,
       invited_email: inviteEmail.trim(),
       invited_by: session.user.id,
-    }).select().single();
-    if (data) {
+    });
+    // Send invite email via backend
+    try {
+      const res = await fetch('/api/send-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: inviteEmail.trim(),
+          teamName: team.name,
+          inviterName: profile?.full_name || session.user.email,
+          teamId: team.id,
+        })
+      });
+      const result = await res.json();
+      if (result.error) throw new Error(result.error);
       showToast(`✓ Invite sent to ${inviteEmail}`);
-      setInviteEmail("");
+    } catch(e) {
+      // Even if email fails, the invite is saved — show instructions
+      showToast(`✓ Invite saved! Share this link manually: ${window.location.origin}?team=${team.id}`);
     }
+    setInviteEmail("");
   };
 
   const removeMember = async (userId) => {
