@@ -1298,6 +1298,24 @@ export default function HireIQPro({ session }) {
     });
   };
 
+  const permanentlyDeleteRole = (id) => {
+    const role = roles.find(r => r.id === id);
+    setConfirmDialog({
+      title: "⚠️ Permanently delete this role?",
+      message: `"${role?.title}" and ALL its candidate data will be deleted forever. This cannot be undone.`,
+      confirmLabel: "Delete Forever",
+      danger: true,
+      onConfirm: async () => {
+        await supabase.from('pipeline_candidates').delete().eq('role_title', role?.title).eq('user_id', session.user.id);
+        await supabase.from('roles').delete().eq('id', id);
+        setRoles(r => r.filter(x => x.id !== id));
+        setCandidates(c => c.filter(x => x.role !== role?.title));
+        setConfirmDialog(null);
+        showToast("✓ Role permanently deleted");
+      }
+    });
+  };
+
   const selectRole = (role) => {
     setSelectedRole(role);
     localStorage.setItem('hireiq_selected_role', JSON.stringify(role));
@@ -1871,6 +1889,10 @@ ${scorecard.summary}`
 
   const startInterview = async (candidateName) => {
     if (!candidateName.trim() || !selectedRole) return;
+    if (skillsList.length === 0 && (!selectedRole.skills || selectedRole.skills.length === 0)) {
+      showToast("⚠ Add at least one skill to evaluate before starting");
+      return;
+    }
     setInterviewCandidate(candidateName);
     setGeneratingQuestions(true);
     setInterviewMode(true);
@@ -1947,7 +1969,13 @@ Return ONLY a valid JSON array, no markdown, no explanation:
     "question": "<the exact question to read aloud>",
     "skill": "<which skill from the list this evaluates>",
     "type": "<Technical|Behavioral|Situational|Leadership|Culture>",
-    "hint": ["<bullet 1: key element of a strong answer>", "<bullet 2: what a weak answer looks like>", "<bullet 3: follow-up probe question to ask if needed>"]
+    "hint": [
+      "<bullet 1: What a strong answer MUST include — be specific about content, structure, and evidence>",
+      "<bullet 2: What a strong answer demonstrates — skills, mindset, or approach shown>",
+      "<bullet 3: What makes a WEAK answer — specific red flags to watch for>",
+      "<bullet 4: A probing follow-up question to go deeper if the answer is vague>",
+      "<bullet 5: A scoring tip — what separates a 4/5 from a 5/5 answer for this specific question>"
+    ]
   }
 ]`;
 
@@ -2506,15 +2534,20 @@ Return EXACTLY this JSON:
                           ✓ WHAT A STRONG ANSWER INCLUDES
                         </span>
                         {Array.isArray(questions[currentQ].hint) ? (
-                          <ul style={{listStyle:"none",display:"flex",flexDirection:"column",gap:8,margin:0,padding:0}}>
-                            {questions[currentQ].hint.map((h,i)=>(
-                              <li key={i} style={{display:"flex",gap:10,alignItems:"flex-start",fontSize:13,lineHeight:1.65}}>
-                                <span style={{color:i===0?"var(--green)":i===1?"var(--rose)":"var(--amber)",fontSize:16,lineHeight:1,flexShrink:0}}>
-                                  {i===0?"✓":i===1?"✗":"→"}
-                                </span>
-                                <span style={{color:i===0?"var(--text)":i===1?"rgba(248,113,113,.8)":"var(--sub)"}}>{h}</span>
-                              </li>
-                            ))}
+                          <ul style={{listStyle:"none",display:"flex",flexDirection:"column",gap:10,margin:0,padding:0}}>
+                            {questions[currentQ].hint.map((h,i)=>{
+                              const icons = ["✓","✓","✗","→","★"];
+                              const colors = ["var(--green)","var(--green)","var(--rose)","var(--amber)","var(--hi)"];
+                              const textColors = ["var(--text)","var(--text)","rgba(248,113,113,.85)","var(--sub)","rgba(56,189,248,.9)"];
+                              return (
+                                <li key={i} style={{display:"flex",gap:10,alignItems:"flex-start",fontSize:13,lineHeight:1.7}}>
+                                  <span style={{color:colors[i]||"var(--sub)",fontSize:14,lineHeight:1.4,flexShrink:0,fontWeight:700}}>
+                                    {icons[i]||"•"}
+                                  </span>
+                                  <span style={{color:textColors[i]||"var(--sub)"}}>{h}</span>
+                                </li>
+                              );
+                            })}
                           </ul>
                         ) : (
                           <span style={{color:"var(--text)",fontSize:13,lineHeight:1.7}}>{questions[currentQ].hint}</span>
@@ -3245,11 +3278,16 @@ Return EXACTLY this JSON:
                           <div className="role-card-body">
                             <div className="role-card-meta">
                               <div className="role-card-count">{role.candidates_count||0} candidates analyzed</div>
-                              <button className="role-action-btn edit" onClick={async()=>{
-                                await supabase.from('roles').update({status:'active'}).eq('id',role.id);
-                                setRoles(r=>r.map(x=>x.id===role.id?{...x,status:'active'}:x));
-                                showToast("Role restored");
-                              }}>Restore</button>
+                              <div style={{display:"flex",gap:6}}>
+                                <button className="role-action-btn edit" onClick={async()=>{
+                                  await supabase.from('roles').update({status:'active'}).eq('id',role.id);
+                                  setRoles(r=>r.map(x=>x.id===role.id?{...x,status:'active'}:x));
+                                  showToast("Role restored");
+                                }}>Restore</button>
+                                <button className="role-action-btn danger" onClick={()=>permanentlyDeleteRole(role.id)}>
+                                  Delete Forever
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -3473,7 +3511,6 @@ Return EXACTLY this JSON:
                   </>
                 );
               })()}
-              ) : null}
             </div>
           </div>
         )}
