@@ -830,6 +830,38 @@ textarea.inp{resize:none;line-height:1.65;min-height:110px}
 .pro-badge{display:inline-block;padding:2px 7px;border-radius:4px;font:700 9px var(--mono);letter-spacing:1px;text-transform:uppercase;background:linear-gradient(135deg,var(--amber),#f59e0b);color:#000;margin-left:6px}
 .free-badge{display:inline-block;padding:2px 7px;border-radius:4px;font:700 9px var(--mono);letter-spacing:1px;text-transform:uppercase;background:rgba(93,122,148,.2);color:var(--sub);margin-left:6px}
 
+/* ── NOTIFICATIONS ── */
+.notif-bell{position:relative;background:none;border:none;cursor:pointer;padding:6px;color:var(--sub);font-size:18px;transition:.15s;border-radius:8px}
+.notif-bell:hover{color:var(--text);background:var(--ink3)}
+.notif-badge{position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:var(--rose);color:#fff;font:700 9px var(--mono);display:flex;align-items:center;justify-content:center}
+.notif-panel{
+  position:fixed;top:52px;right:80px;z-index:500;
+  width:360px;max-height:480px;
+  background:var(--ink2);border:1px solid var(--line);
+  border-radius:12px;overflow:hidden;
+  box-shadow:0 12px 40px rgba(0,0,0,.5);
+  display:flex;flex-direction:column;
+}
+.notif-panel-head{
+  padding:14px 16px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+}
+.notif-panel-title{font:700 13px var(--font)}
+.notif-mark-all{background:none;border:none;color:var(--hi);font:500 11px var(--mono);cursor:pointer}
+.notif-list{overflow-y:auto;flex:1}
+.notif-item{
+  padding:12px 16px;border-bottom:1px solid var(--line);
+  cursor:pointer;transition:.15s;display:flex;gap:12px;align-items:flex-start;
+}
+.notif-item:hover{background:var(--ink3)}
+.notif-item.unread{background:rgba(56,189,248,.04)}
+.notif-item.unread::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--hi);flex-shrink:0;margin-top:5px}
+.notif-item.read::before{content:'';width:6px;height:6px;flex-shrink:0}
+.notif-item-title{font:600 12px var(--font);margin-bottom:3px}
+.notif-item-msg{font:400 11px var(--font);color:var(--sub);line-height:1.5}
+.notif-item-time{font:400 10px var(--mono);color:var(--dim);margin-top:4px}
+.notif-empty{padding:32px;text-align:center;color:var(--sub);font-size:13px}
+
 /* ── CONFIRM DIALOG ── */
 .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1500;display:flex;align-items:center;justify-content:center;padding:20px}
 .confirm-card{background:var(--ink2);border:1px solid var(--line);border-radius:12px;padding:24px;width:100%;max-width:380px}
@@ -1104,6 +1136,11 @@ export default function HireIQPro({ session }) {
   const [referralCount, setReferralCount] = useState(0);
   const [referralBonus, setReferralBonus] = useState(0);
   const [copiedReferral, setCopiedReferral] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifPanel, setShowNotifPanel] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [inviteUsername, setInviteUsername] = useState("");
+  const [usernameSearch, setUsernameSearch] = useState(null); // null | found user | not-found
   const [lightTheme, setLightTheme] = useState(() => localStorage.getItem('hireiq_theme') === 'light');
   const [showTemplates, setShowTemplates] = useState(false);
   const [templateSearch, setTemplateSearch] = useState("");
@@ -1230,6 +1267,7 @@ export default function HireIQPro({ session }) {
     loadTeam();
     loadReferral();
     loadNotifSettings();
+    loadNotifications();
     // Show tour only for brand new users (created_at within last 3 minutes)
     const checkOnboarding = async () => {
       const hasSeenOnboarding = localStorage.getItem('hireiq_onboarded');
@@ -1520,6 +1558,69 @@ ${emailBranding.email_signature}` : ""}`);
   const getNoteType = (id) => NOTE_TYPES.find(t => t.id === id) || NOTE_TYPES[0];
 
   /* ── PHASE 3 FUNCTIONS ── */
+
+  // Notifications
+  const loadNotifications = async () => {
+    const { data } = await supabase
+      .from('notifications').select('*')
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (data) {
+      setNotifications(data);
+      setUnreadCount(data.filter(n => !n.read).length);
+    }
+  };
+
+  const createNotification = async (userId, type, title, message, data = {}) => {
+    await supabase.from('notifications').insert({
+      user_id: userId, type, title, message, data
+    });
+  };
+
+  const markAllRead = async () => {
+    await supabase.from('notifications').update({ read: true })
+      .eq('user_id', session.user.id).eq('read', false);
+    setNotifications(n => n.map(x => ({...x, read: true})));
+    setUnreadCount(0);
+  };
+
+  const markRead = async (id) => {
+    await supabase.from('notifications').update({ read: true }).eq('id', id);
+    setNotifications(n => n.map(x => x.id === id ? {...x, read: true} : x));
+    setUnreadCount(c => Math.max(0, c - 1));
+  };
+
+  // Search user by username for team invite
+  const searchByUsername = async (uname) => {
+    if (!uname.trim() || uname.length < 2) { setUsernameSearch(null); return; }
+    const { data } = await supabase
+      .from('profiles').select('id, full_name, email, username')
+      .eq('username', uname.trim().toLowerCase()).single();
+    setUsernameSearch(data || "not-found");
+  };
+
+  // Invite by username
+  const inviteByUsername = async () => {
+    if (!usernameSearch || usernameSearch === "not-found" || !team) return;
+    const user = usernameSearch;
+    // Add to team directly
+    await supabase.from('team_members').upsert({
+      team_id: team.id, user_id: user.id, role: 'member', status: 'active'
+    }, { onConflict: 'team_id,user_id' });
+    await supabase.from('profiles').update({ team_id: team.id }).eq('id', user.id);
+    // Send notification to the invited user
+    await createNotification(
+      user.id, 'team_invite',
+      `You've been added to ${team.name}`,
+      `${profile?.full_name || 'A recruiter'} added you to the team "${team.name}" on HireIQ Pro.`,
+      { team_id: team.id, team_name: team.name }
+    );
+    setInviteUsername("");
+    setUsernameSearch(null);
+    await loadTeam();
+    showToast(`✓ @${user.username} added to your team!`);
+  };
 
   // Team
   const loadTeam = async () => {
@@ -3519,6 +3620,10 @@ Return EXACTLY this JSON:
         {showProfileMenu && (
           <div style={{position:"fixed",inset:0,zIndex:100}} onClick={()=>setShowProfileMenu(false)}/>
         )}
+        {/* Close notification panel on outside click */}
+        {showNotifPanel && (
+          <div style={{position:"fixed",inset:0,zIndex:499}} onClick={()=>setShowNotifPanel(false)}/>
+        )}
 
         {/* Close status menu on outside click */}
         {statusMenuFor && (
@@ -3712,12 +3817,55 @@ Return EXACTLY this JSON:
                     </div>
                   ))}
                   {team.owner_id === session.user.id && (
-                    <div className="invite-row">
-                      <input className="inp" placeholder="Invite by email..."
-                        value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)}
-                        onKeyDown={e=>e.key==="Enter"&&inviteMember()}
-                        style={{flex:1,padding:"8px 12px"}}/>
-                      <button className="add-note-btn" onClick={inviteMember}>Send Invite</button>
+                    <div style={{padding:"14px 20px",borderTop:"1px solid var(--line)",display:"flex",flexDirection:"column",gap:10}}>
+                      {/* Invite by username */}
+                      <div style={{font:"600 10px var(--mono)",letterSpacing:1,color:"var(--sub)",textTransform:"uppercase"}}>Invite by Username</div>
+                      <div style={{display:"flex",gap:8}}>
+                        <div style={{flex:1,position:"relative"}}>
+                          <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:"var(--sub)",fontSize:13,pointerEvents:"none"}}>@</span>
+                          <input className="inp" placeholder="username"
+                            style={{paddingLeft:26,padding:"8px 12px 8px 26px"}}
+                            value={inviteUsername}
+                            onChange={e=>{setInviteUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,""));searchByUsername(e.target.value);}}
+                          />
+                        </div>
+                        <button className="add-note-btn"
+                          disabled={!usernameSearch || usernameSearch === "not-found"}
+                          onClick={inviteByUsername}
+                          style={{opacity:(!usernameSearch || usernameSearch === "not-found")?0.4:1}}>
+                          Add Member
+                        </button>
+                      </div>
+                      {inviteUsername.length >= 2 && usernameSearch === "not-found" && (
+                        <div style={{fontSize:11,color:"var(--rose)"}}>
+                          @{inviteUsername} not found on HireIQ
+                        </div>
+                      )}
+                      {usernameSearch && usernameSearch !== "not-found" && (
+                        <div style={{background:"rgba(52,211,153,.06)",border:"1px solid rgba(52,211,153,.2)",borderRadius:8,padding:"10px 12px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                          <div>
+                            <div style={{font:"600 13px var(--font)"}}>{usernameSearch.full_name}</div>
+                            <div style={{font:"400 11px var(--mono)",color:"var(--sub)"}}>@{usernameSearch.username}</div>
+                          </div>
+                          <span style={{font:"600 10px var(--mono)",color:"var(--green)",letterSpacing:.5}}>FOUND ✓</span>
+                        </div>
+                      )}
+
+                      {/* Divider */}
+                      <div style={{display:"flex",alignItems:"center",gap:10,margin:"4px 0"}}>
+                        <div style={{flex:1,height:1,background:"var(--line)"}}/>
+                        <span style={{font:"400 10px var(--mono)",color:"var(--dim)"}}>or invite by email</span>
+                        <div style={{flex:1,height:1,background:"var(--line)"}}/>
+                      </div>
+
+                      {/* Invite by email fallback */}
+                      <div style={{display:"flex",gap:8}}>
+                        <input className="inp" placeholder="email@company.com"
+                          value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)}
+                          onKeyDown={e=>e.key==="Enter"&&inviteMember()}
+                          style={{flex:1,padding:"8px 12px"}}/>
+                        <button className="add-note-btn" onClick={inviteMember}>Send Invite</button>
+                      </div>
                     </div>
                   )}
                 </div>

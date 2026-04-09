@@ -14,7 +14,6 @@ const CSS = `
   --font:'Epilogue',sans-serif;--mono:'JetBrains Mono',monospace;
 }
 html,body,#root{height:100%;background:var(--ink);color:var(--text);font-family:var(--font)}
-
 .auth-shell{
   min-height:100vh;display:flex;align-items:center;justify-content:center;
   background:var(--ink);
@@ -35,6 +34,7 @@ html,body,#root{height:100%;background:var(--ink);color:var(--text);font-family:
 .auth-sub{font-size:13px;color:var(--sub);text-align:center;margin-bottom:28px;line-height:1.6}
 .auth-field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
 .auth-label{font:600 11px var(--mono);letter-spacing:1.5px;text-transform:uppercase;color:var(--hi)}
+.auth-label-hint{font:400 10px var(--mono);color:var(--dim);margin-left:6px;text-transform:none;letter-spacing:0}
 .auth-inp{
   background:var(--ink3);border:1px solid var(--line2);
   border-radius:8px;padding:11px 14px;
@@ -43,6 +43,7 @@ html,body,#root{height:100%;background:var(--ink);color:var(--text);font-family:
 }
 .auth-inp:focus{border-color:var(--hi);box-shadow:0 0 0 3px rgba(56,189,248,.06)}
 .auth-inp::placeholder{color:var(--dim)}
+.auth-inp.error-field{border-color:var(--rose)}
 .auth-btn{
   width:100%;padding:13px;margin-top:6px;
   background:linear-gradient(135deg,var(--hi),var(--hi2));
@@ -70,35 +71,66 @@ html,body,#root{height:100%;background:var(--ink);color:var(--text);font-family:
 .auth-success{background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--green);margin-bottom:14px;line-height:1.5;}
 .forgot-link{background:none;border:none;color:var(--sub);font:400 12px var(--font);cursor:pointer;text-align:right;margin-top:-8px;margin-bottom:10px;display:block;transition:.15s;}
 .forgot-link:hover{color:var(--hi)}
+.username-prefix{
+  position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  font:400 14px var(--mono);color:var(--sub);pointer-events:none;
+}
+.username-wrap{position:relative}
+.username-wrap .auth-inp{padding-left:26px}
 `;
 
 export default function AuthPage() {
-  const [mode, setMode] = useState("login"); // login | signup | reset
+  const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+  const [usernameStatus, setUsernameStatus] = useState(null); // null | checking | available | taken
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const checkUsername = async (val) => {
+    const clean = val.toLowerCase().replace(/[^a-z0-9_]/g, "");
+    setUsername(clean);
+    if (clean.length < 3) { setUsernameStatus(null); return; }
+    setUsernameStatus("checking");
+    const { data } = await supabase
+      .from('profiles').select('id').eq('username', clean).single();
+    setUsernameStatus(data ? "taken" : "available");
+  };
+
   const handleEmailAuth = async () => {
     setError(""); setSuccess("");
     if (!email || !password) { setError("Please fill in all fields."); return; }
-    if (mode === "signup" && !name) { setError("Please enter your name."); return; }
+    if (mode === "signup") {
+      if (!name) { setError("Please enter your name."); return; }
+      if (!username || username.length < 3) { setError("Username must be at least 3 characters."); return; }
+      if (usernameStatus === "taken") { setError("That username is already taken. Try another."); return; }
+      if (usernameStatus === "checking") { setError("Still checking username — please wait."); return; }
+    }
     if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
 
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email, password,
-          options: { data: { full_name: name } }
+          options: { data: { full_name: name, username } }
         });
         if (error) throw error;
-        setSuccess("Account created! Check your email to confirm your account, then log in.");
+        // Save username to profiles immediately
+        if (data?.user) {
+          await supabase.from('profiles').upsert({
+            id: data.user.id,
+            email,
+            full_name: name,
+            username,
+          }, { onConflict: 'id' });
+        }
+        setSuccess("Account created! Check your email to confirm, then log in.");
         setMode("login");
       } else {
-        // Clear any stale session first (common issue after password reset)
         await supabase.auth.signOut();
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -157,10 +189,30 @@ export default function AuthPage() {
           {success && <div className="auth-success">✓ {success}</div>}
 
           {mode === "signup" && (
-            <div className="auth-field">
-              <label className="auth-label">Full Name</label>
-              <input className="auth-inp" placeholder="e.g. Alex Johnson" value={name} onChange={e => setName(e.target.value)} />
-            </div>
+            <>
+              <div className="auth-field">
+                <label className="auth-label">Full Name</label>
+                <input className="auth-inp" placeholder="e.g. Alex Johnson"
+                  value={name} onChange={e => setName(e.target.value)} />
+              </div>
+              <div className="auth-field">
+                <label className="auth-label">
+                  Username
+                  <span className="auth-label-hint">letters, numbers, underscore only</span>
+                </label>
+                <div className="username-wrap">
+                  <span className="username-prefix">@</span>
+                  <input className={`auth-inp ${usernameStatus === "taken" ? "error-field" : ""}`}
+                    placeholder="yourhandle"
+                    value={username}
+                    onChange={e => checkUsername(e.target.value)}
+                    style={{paddingLeft:26}}/>
+                </div>
+                {usernameStatus === "checking" && <div style={{fontSize:11,color:"var(--sub)",marginTop:4}}>Checking...</div>}
+                {usernameStatus === "available" && <div style={{fontSize:11,color:"var(--green)",marginTop:4}}>✓ @{username} is available</div>}
+                {usernameStatus === "taken" && <div style={{fontSize:11,color:"var(--rose)",marginTop:4}}>✗ @{username} is already taken</div>}
+              </div>
+            </>
           )}
 
           <div className="auth-field">
