@@ -1986,26 +1986,42 @@ Return ONLY a valid JSON array, no markdown, no explanation:
         });
         setQuestions(normalized);
       } else {
-        // Fallback — varied question types
+        // Fallback — varied questions AND unique hints per skill
         const skillArr = skills.split(",").map(s => s.trim());
         const types = ["Technical","Behavioral","Situational","Leadership","Culture"];
         const templates = [
-          (skill) => `Walk me through a time you had to solve a complex ${skill} problem under a tight deadline. What approach did you take?`,
-          (skill) => `Tell me about a specific situation where your ${skill} skills directly impacted the outcome of a project.`,
-          (skill) => `How would you handle a scenario where your approach to ${skill} was challenged by a senior colleague?`,
-          (skill) => `What is the most difficult ${skill}-related challenge you have faced and how did you overcome it?`,
-          (skill) => `Describe a time you went above and beyond to demonstrate ${skill} in your role.`,
+          (skill) => `Walk me through a specific time you had to apply ${skill} under pressure. What was the situation and what did you do?`,
+          (skill) => `Can you give me an example where your ${skill} directly determined the success or failure of a project?`,
+          (skill) => `Tell me about the biggest ${skill}-related mistake you've made and what you learned from it.`,
+          (skill) => `How do you approach improving your ${skill}? Give me a concrete recent example.`,
+          (skill) => `Describe a situation where you had to use ${skill} to influence someone who disagreed with you.`,
+          (skill) => `What does excellent ${skill} look like in practice? Show me with a real example from your experience.`,
+          (skill) => `Tell me about a time your ${skill} was tested in an unexpected way. How did you respond?`,
         ];
-        const fallback = Array.from({length:count}, (_,i) => ({
-          question: templates[i % templates.length](skillArr[i % skillArr.length]),
-          skill: skillArr[i % skillArr.length],
-          type: types[i % types.length],
-          hint: [
-            "Strong answer: specific situation, clear personal ownership, measurable outcome, reflection on learning.",
-            "Weak answer: vague story, uses 'we', no metrics, no personal accountability.",
-            "Follow-up: 'What would you do differently if faced with this again?'"
-          ]
-        }));
+        const hintsBySkill = {
+          "Technical": ["Strong answer: names specific tools, languages, or systems used with measurable outcomes like performance improvements or bugs fixed.", "Weak answer: vague description like 'I fixed some code' with no specifics, tools, or results.", "Follow-up: 'What would you do differently with more time or resources?'"],
+          "Communication": ["Strong answer: describes the audience, the message, the medium chosen, and the outcome — especially if it changed someone's mind.", "Weak answer: says 'I communicated clearly' without explaining how or what the result was.", "Follow-up: 'How did you adjust your approach when your first attempt didn't land?'"],
+          "Problem Solving": ["Strong answer: walks through their thinking process step by step — how they diagnosed the problem, what options they considered, why they chose their approach.", "Weak answer: jumps straight to the solution without explaining how they got there.", "Follow-up: 'What alternative solutions did you consider and reject?'"],
+          "Leadership": ["Strong answer: talks about motivating others, handling conflict, or making a decision that affected the team — with specific outcomes.", "Weak answer: describes individual work and adds 'I also helped the team' without specifics.", "Follow-up: 'How did you handle a team member who wasn't pulling their weight?'"],
+          "Analytical Thinking": ["Strong answer: explains what data they looked at, how they interpreted it, and what decision it led to — with a clear outcome.", "Weak answer: says 'I analyzed the situation' without explaining what data or frameworks they used.", "Follow-up: 'What would have changed your conclusion if the data looked different?'"],
+          "Attention to Detail": ["Strong answer: gives a specific example of catching an error others missed, or a process they built to prevent mistakes — with impact.", "Weak answer: says 'I'm very detail-oriented' without a concrete example.", "Follow-up: 'How do you balance thoroughness with moving fast?'"],
+          "Adaptability": ["Strong answer: describes a situation where the plan changed unexpectedly and they pivoted quickly — with the outcome of that pivot.", "Weak answer: gives a generic story about 'learning new things' without a real challenge.", "Follow-up: 'What was the hardest part of adapting and how did you push through it?'"],
+          "Culture Fit": ["Strong answer: aligns their personal values with a specific real situation where those values shaped a decision or behavior.", "Weak answer: describes company values in abstract terms without a personal example.", "Follow-up: 'Tell me about a time you disagreed with your team's culture or a decision made. How did you handle it?'"],
+        };
+        const defaultHint = (skill) => [
+          `Strong answer for ${skill}: specific situation with clear personal ownership, measurable outcome, and reflection on what was learned.`,
+          `Weak answer: vague story with no metrics, uses 'we' instead of 'I', and no reflection on what could be improved.`,
+          `Follow-up: 'If you faced this ${skill} challenge again today, what would you do differently?'`
+        ];
+        const fallback = Array.from({length:count}, (_,i) => {
+          const skill = skillArr[i % skillArr.length];
+          return {
+            question: templates[i % templates.length](skill),
+            skill,
+            type: types[i % types.length],
+            hint: hintsBySkill[skill] || defaultHint(skill)
+          };
+        });
         setQuestions(fallback);
       }
     } catch(e) {
