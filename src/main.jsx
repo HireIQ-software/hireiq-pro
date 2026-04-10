@@ -4,6 +4,7 @@ import App from './App.jsx'
 import AuthPage from './AuthPage.jsx'
 import ResetPassword from './ResetPassword.jsx'
 import JoinTeam from './JoinTeam.jsx'
+import SetupUsername from './SetupUsername.jsx'
 import { supabase } from './supabase.js'
 
 function Root() {
@@ -80,7 +81,27 @@ function Root() {
 
   if (mode === 'reset') return <ResetPassword onDone={handleDone} />
   if (mode === 'invite' && session) return <JoinTeam onDone={handleDone} />
-  return session ? <App session={session} /> : <AuthPage />
+  if (session) return <SetupUsernameWrapper session={session} />
+  return <AuthPage />
+}
+
+function SetupUsernameWrapper({ session }) {
+  const [needsUsername, setNeedsUsername] = useState(null);
+
+  useEffect(() => {
+    const check = async () => {
+      const { data } = await supabase
+        .from('profiles').select('username').eq('id', session.user.id).single();
+      setNeedsUsername(!data?.username);
+    };
+    check();
+  }, [session]);
+
+  if (needsUsername === null) return (
+    <div style={{height:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#0a0d12',color:'#38bdf8',fontFamily:'JetBrains Mono,monospace',fontSize:13}}>LOADING...</div>
+  );
+  if (needsUsername) return <SetupUsername session={session} onDone={() => setNeedsUsername(false)} />;
+  return <App session={session} />;
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(

@@ -2071,11 +2071,11 @@ Return ONLY a valid JSON array, no markdown, no explanation:
     "skill": "<which skill from the list this evaluates>",
     "type": "<Technical|Behavioral|Situational|Leadership|Culture>",
     "hint": [
-      "<bullet 1: What a strong answer MUST include — be specific about content, structure, and evidence>",
-      "<bullet 2: What a strong answer demonstrates — skills, mindset, or approach shown>",
-      "<bullet 3: What makes a WEAK answer — specific red flags to watch for>",
-      "<bullet 4: A probing follow-up question to go deeper if the answer is vague>",
-      "<bullet 5: A scoring tip — what separates a 4/5 from a 5/5 answer for this specific question>"
+      "STRONG: <exactly what a strong answer for THIS specific question must include — name specific content, examples, or evidence the candidate should provide>",
+      "ALSO LOOK FOR: <what mindset, attitude, or thinking pattern a strong answer reveals for this question>",
+      "WEAK SIGNS: <specific red flags that indicate a poor answer to THIS question — be concrete, not generic>",
+      "PROBE: <one sharp follow-up question to ask if their answer is vague or unconvincing>",
+      "SCORING TIP: <what specifically separates a 4/5 answer from a 5/5 for this exact question>"
     ]
   }
 ]`;
@@ -2442,6 +2442,35 @@ Return EXACTLY this JSON:
             )}
             {profile && (
               <div style={{display:"flex",alignItems:"center",gap:10}}>
+                {/* Notification Bell */}
+                <div style={{position:"relative"}}>
+                  <button className="notif-bell" onClick={()=>{setShowNotifPanel(v=>!v);if(!showNotifPanel)loadNotifications();}}>
+                    🔔
+                    {unreadCount > 0 && <span className="notif-badge">{unreadCount > 9 ? "9+" : unreadCount}</span>}
+                  </button>
+                  {showNotifPanel && (
+                    <div className="notif-panel">
+                      <div className="notif-panel-head">
+                        <span className="notif-panel-title">Notifications</span>
+                        {unreadCount > 0 && <button className="notif-mark-all" onClick={markAllRead}>Mark all read</button>}
+                      </div>
+                      <div className="notif-list">
+                        {notifications.length === 0
+                          ? <div className="notif-empty">No notifications yet</div>
+                          : notifications.map(n => (
+                            <div key={n.id} className={`notif-item ${n.read?"read":"unread"}`} onClick={()=>markRead(n.id)}>
+                              <div style={{flex:1}}>
+                                <div className="notif-item-title">{n.title}</div>
+                                <div className="notif-item-msg">{n.message}</div>
+                                <div className="notif-item-time">{new Date(n.created_at).toLocaleDateString()} {new Date(n.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+                              </div>
+                            </div>
+                          ))
+                        }
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <div style={{
                   fontFamily:"var(--mono)",fontSize:11,
                   background: isLimitReached() ? "rgba(248,113,113,.1)" : "rgba(56,189,248,.08)",
