@@ -2128,19 +2128,69 @@ Return ONLY a valid JSON array, no markdown, no explanation:
           (skill) => `Tell me about a time your ${skill} was tested in an unexpected way. How did you respond?`,
         ];
         const hintsBySkill = {
-          "Technical": ["Strong answer: names specific tools, languages, or systems used with measurable outcomes like performance improvements or bugs fixed.", "Weak answer: vague description like 'I fixed some code' with no specifics, tools, or results.", "Follow-up: 'What would you do differently with more time or resources?'"],
-          "Communication": ["Strong answer: describes the audience, the message, the medium chosen, and the outcome — especially if it changed someone's mind.", "Weak answer: says 'I communicated clearly' without explaining how or what the result was.", "Follow-up: 'How did you adjust your approach when your first attempt didn't land?'"],
-          "Problem Solving": ["Strong answer: walks through their thinking process step by step — how they diagnosed the problem, what options they considered, why they chose their approach.", "Weak answer: jumps straight to the solution without explaining how they got there.", "Follow-up: 'What alternative solutions did you consider and reject?'"],
-          "Leadership": ["Strong answer: talks about motivating others, handling conflict, or making a decision that affected the team — with specific outcomes.", "Weak answer: describes individual work and adds 'I also helped the team' without specifics.", "Follow-up: 'How did you handle a team member who wasn't pulling their weight?'"],
-          "Analytical Thinking": ["Strong answer: explains what data they looked at, how they interpreted it, and what decision it led to — with a clear outcome.", "Weak answer: says 'I analyzed the situation' without explaining what data or frameworks they used.", "Follow-up: 'What would have changed your conclusion if the data looked different?'"],
-          "Attention to Detail": ["Strong answer: gives a specific example of catching an error others missed, or a process they built to prevent mistakes — with impact.", "Weak answer: says 'I'm very detail-oriented' without a concrete example.", "Follow-up: 'How do you balance thoroughness with moving fast?'"],
-          "Adaptability": ["Strong answer: describes a situation where the plan changed unexpectedly and they pivoted quickly — with the outcome of that pivot.", "Weak answer: gives a generic story about 'learning new things' without a real challenge.", "Follow-up: 'What was the hardest part of adapting and how did you push through it?'"],
-          "Culture Fit": ["Strong answer: aligns their personal values with a specific real situation where those values shaped a decision or behavior.", "Weak answer: describes company values in abstract terms without a personal example.", "Follow-up: 'Tell me about a time you disagreed with your team's culture or a decision made. How did you handle it?'"],
+          "Technical": [
+            "STRONG: Names specific tools, languages, or systems (e.g. React, PostgreSQL, AWS Lambda) with quantifiable outcomes — performance %, bugs fixed, time saved.",
+            "ALSO LOOK FOR: Shows they understand WHY they chose that approach — not just what they did but the reasoning behind the technical decision.",
+            "WEAK SIGNS: Vague answers like 'I fixed some code' or 'I used various tools' — no specifics, no metrics, no ownership.",
+            "PROBE: 'What would you have done differently if you had twice the time or a larger team?'",
+            "SCORING TIP: 4/5 gives a solid specific example. 5/5 also explains trade-offs considered and reflects on what they learned."
+          ],
+          "Communication": [
+            "STRONG: Describes the specific audience, the message they needed to land, the medium chosen (email, meeting, doc), and the measurable outcome.",
+            "ALSO LOOK FOR: Evidence they adapted their communication style — simplified technical concepts, escalated appropriately, or changed approach after initial failure.",
+            "WEAK SIGNS: Says 'I communicated clearly' without any specifics about how, to whom, or what changed as a result.",
+            "PROBE: 'How did you adjust your approach when your first attempt didn't land the way you expected?'",
+            "SCORING TIP: 4/5 has a clear story. 5/5 shows self-awareness — they recognized when communication wasn't working and actively fixed it."
+          ],
+          "Problem Solving": [
+            "STRONG: Walks through diagnosis → options considered → decision made → outcome, with specific constraints they were working under.",
+            "ALSO LOOK FOR: Shows structured thinking — did they break the problem down? Did they involve others? Did they validate their solution?",
+            "WEAK SIGNS: Jumps straight to 'I solved it' without explaining how they identified the root cause or what alternatives they considered.",
+            "PROBE: 'What other solutions did you consider and reject, and why?'",
+            "SCORING TIP: 4/5 solves the problem well. 5/5 shows they prevented it from happening again or turned it into a process improvement."
+          ],
+          "Leadership": [
+            "STRONG: Describes influencing or motivating others, resolving conflict, or making a call that affected the team — with measurable team outcome.",
+            "ALSO LOOK FOR: Evidence of servant leadership — did they remove blockers, give credit to others, or develop someone on the team?",
+            "WEAK SIGNS: Describes individual work and adds 'I also helped the team' — no specifics on how they actually led or influenced anyone.",
+            "PROBE: 'Tell me about a time a team member pushed back on your decision. How did you handle it?'",
+            "SCORING TIP: 4/5 led effectively. 5/5 shows they brought out the best in someone else or built something that outlasted them."
+          ],
+          "Analytical Thinking": [
+            "STRONG: Names specific data sources, explains how they interpreted the data, and connects the analysis to a concrete decision or outcome.",
+            "ALSO LOOK FOR: Shows they questioned assumptions, looked for contradicting evidence, or stress-tested their conclusions.",
+            "WEAK SIGNS: Says 'I analyzed the situation' without explaining what data they used, what tools, or how they reached their conclusion.",
+            "PROBE: 'What data or signal would have changed your conclusion?'",
+            "SCORING TIP: 4/5 does solid analysis. 5/5 shows intellectual honesty — they acknowledge limitations or uncertainty in their analysis."
+          ],
+          "Attention to Detail": [
+            "STRONG: Gives a specific example of catching an error others missed, or a systematic process they built to prevent mistakes — with real impact.",
+            "ALSO LOOK FOR: Shows they build systems, not just double-check manually — checklists, automated tests, review processes.",
+            "WEAK SIGNS: Says 'I'm very detail-oriented' or 'I always proofread my work' without a concrete example of catching something important.",
+            "PROBE: 'How do you balance being thorough with moving quickly when there's time pressure?'",
+            "SCORING TIP: 4/5 catches errors. 5/5 builds processes so errors don't happen in the first place."
+          ],
+          "Adaptability": [
+            "STRONG: Describes a specific situation where the plan changed unexpectedly, how quickly they pivoted, and the outcome of that pivot.",
+            "ALSO LOOK FOR: Shows they stayed calm, communicated proactively during the change, and helped others adapt too.",
+            "WEAK SIGNS: Generic story about 'learning new things' or 'being open-minded' without a real unexpected challenge they navigated.",
+            "PROBE: 'What was the hardest part of adapting in that situation, and what helped you push through?'",
+            "SCORING TIP: 4/5 adapts well personally. 5/5 helps the whole team adapt and maintains quality during the transition."
+          ],
+          "Culture Fit": [
+            "STRONG: Aligns personal values with a specific real situation where those values shaped a decision — not just repeating the company values back.",
+            "ALSO LOOK FOR: Evidence of self-awareness — do they know what environments they thrive in and what they find draining?",
+            "WEAK SIGNS: Describes company values in abstract terms ('I believe in teamwork and integrity') without a personal, specific example.",
+            "PROBE: 'Tell me about a time you strongly disagreed with a team decision. How did you handle it?'",
+            "SCORING TIP: 4/5 aligns with values. 5/5 shows genuine reflection — they can articulate what they need to do their best work."
+          ],
         };
         const defaultHint = (skill) => [
-          `Strong answer for ${skill}: specific situation with clear personal ownership, measurable outcome, and reflection on what was learned.`,
-          `Weak answer: vague story with no metrics, uses 'we' instead of 'I', and no reflection on what could be improved.`,
-          `Follow-up: 'If you faced this ${skill} challenge again today, what would you do differently?'`
+          `STRONG: Gives a specific real example for ${skill} with clear personal ownership, measurable outcome, and named constraints or context.`,
+          `ALSO LOOK FOR: Shows they reflect on their approach — not just what happened, but what they learned or would change.`,
+          `WEAK SIGNS: Vague story, uses 'we' instead of 'I', no concrete outcomes, no metrics, no real accountability.`,
+          `PROBE: 'If you faced this ${skill} challenge again today, what would you do differently?'`,
+          `SCORING TIP: 4/5 has a solid specific story. 5/5 shows genuine self-awareness and a growth mindset beyond just completing the task.`
         ];
         const fallback = Array.from({length:count}, (_,i) => {
           const skill = skillArr[i % skillArr.length];
@@ -2440,24 +2490,22 @@ Return EXACTLY this JSON:
             {candidates.length>0 && (
               <div className="cand-count">{candidates.length} candidate{candidates.length!==1?"s":""} tracked</div>
             )}
-            {profile && (
-              <div style={{display:"flex",alignItems:"center",gap:10}}>
-                {/* Notification Bell */}
-                <div style={{position:"relative"}}>
-                  <button className="notif-bell" onClick={()=>{setShowNotifPanel(v=>!v);if(!showNotifPanel)loadNotifications();}}>
-                    🔔
-                    {unreadCount > 0 && <span className="notif-badge">{unreadCount > 9 ? "9+" : unreadCount}</span>}
-                  </button>
-                  {showNotifPanel && (
-                    <div className="notif-panel">
-                      <div className="notif-panel-head">
-                        <span className="notif-panel-title">Notifications</span>
-                        {unreadCount > 0 && <button className="notif-mark-all" onClick={markAllRead}>Mark all read</button>}
-                      </div>
-                      <div className="notif-list">
-                        {notifications.length === 0
-                          ? <div className="notif-empty">No notifications yet</div>
-                          : notifications.map(n => (
+            {/* Notification Bell — always visible when logged in */}
+            <div style={{position:"relative"}}>
+              <button className="notif-bell" onClick={()=>{setShowNotifPanel(v=>!v);if(!showNotifPanel)loadNotifications();}}>
+                🔔
+                {unreadCount > 0 && <span className="notif-badge">{unreadCount > 9 ? "9+" : unreadCount}</span>}
+              </button>
+              {showNotifPanel && (
+                <div className="notif-panel">
+                  <div className="notif-panel-head">
+                    <span className="notif-panel-title">Notifications</span>
+                    {unreadCount > 0 && <button className="notif-mark-all" onClick={markAllRead}>Mark all read</button>}
+                  </div>
+                  <div className="notif-list">
+                    {notifications.length === 0
+                      ? <div className="notif-empty">No notifications yet</div>
+                      : notifications.map(n => (
                             <div key={n.id} className={`notif-item ${n.read?"read":"unread"}`} onClick={()=>markRead(n.id)}>
                               <div style={{flex:1}}>
                                 <div className="notif-item-title">{n.title}</div>
