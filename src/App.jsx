@@ -2490,7 +2490,7 @@ Return EXACTLY this JSON:
             {candidates.length>0 && (
               <div className="cand-count">{candidates.length} candidate{candidates.length!==1?"s":""} tracked</div>
             )}
-            {/* Notification Bell — always visible when logged in */}
+            {/* Notification Bell */}
             <div style={{position:"relative"}}>
               <button className="notif-bell" onClick={()=>{setShowNotifPanel(v=>!v);if(!showNotifPanel)loadNotifications();}}>
                 🔔
@@ -2506,28 +2506,30 @@ Return EXACTLY this JSON:
                     {notifications.length === 0
                       ? <div className="notif-empty">No notifications yet</div>
                       : notifications.map(n => (
-                            <div key={n.id} className={`notif-item ${n.read?"read":"unread"}`} onClick={()=>markRead(n.id)}>
-                              <div style={{flex:1}}>
-                                <div className="notif-item-title">{n.title}</div>
-                                <div className="notif-item-msg">{n.message}</div>
-                                <div className="notif-item-time">{new Date(n.created_at).toLocaleDateString()} {new Date(n.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
-                              </div>
+                          <div key={n.id} className={`notif-item ${n.read?"read":"unread"}`} onClick={()=>markRead(n.id)}>
+                            <div style={{flex:1}}>
+                              <div className="notif-item-title">{n.title}</div>
+                              <div className="notif-item-msg">{n.message}</div>
+                              <div className="notif-item-time">{new Date(n.created_at).toLocaleDateString()} {new Date(n.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
                             </div>
-                          ))
-                        }
-                      </div>
-                    </div>
-                  )}
+                          </div>
+                        ))
+                    }
+                  </div>
                 </div>
-                <div style={{
-                  fontFamily:"var(--mono)",fontSize:11,
-                  background: isLimitReached() ? "rgba(248,113,113,.1)" : "rgba(56,189,248,.08)",
-                  color: isLimitReached() ? "var(--rose)" : "var(--hi)",
-                  border: `1px solid ${isLimitReached() ? "rgba(248,113,113,.25)" : "rgba(56,189,248,.2)"}`,
-                  padding:"3px 10px",borderRadius:20,
-                }}>
-                  {isLimitReached() ? "⚠ Limit reached" : `${profile.analyses_used||0}/${profile.analyses_limit||10} analyses`}
-                </div>
+              )}
+            </div>
+            {profile && (
+              <>
+              <div style={{
+                fontFamily:"var(--mono)",fontSize:11,
+                background: isLimitReached() ? "rgba(248,113,113,.1)" : "rgba(56,189,248,.08)",
+                color: isLimitReached() ? "var(--rose)" : "var(--hi)",
+                border: `1px solid ${isLimitReached() ? "rgba(248,113,113,.25)" : "rgba(56,189,248,.2)"}`,
+                padding:"3px 10px",borderRadius:20,
+              }}>
+                {isLimitReached() ? "⚠ Limit reached" : `${profile.analyses_used||0}/${profile.analyses_limit||10} analyses`}
+              </div>
                 <div className="profile-wrap">
                   <div className="profile-btn" onClick={()=>setShowProfileMenu(m=>!m)}>
                     <div className="profile-avatar">
@@ -2584,7 +2586,7 @@ Return EXACTLY this JSON:
                     </div>
                   )}
                 </div>
-              </div>
+              </>
             )}
           </div>
         </nav>
