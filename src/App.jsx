@@ -1295,29 +1295,46 @@ export default function HireIQPro({ session }) {
 
   const saveRole = async () => {
     if (!roleForm.title.trim()) return;
-    if (editingRole) {
-      const { data } = await supabase.from('roles').update({
-        title: roleForm.title,
-        seniority: roleForm.seniority,
-        job_description: roleForm.job_description,
-        skills: roleSkills,
-      }).eq('id', editingRole.id).select().single();
-      if (data) setRoles(r => r.map(x => x.id === data.id ? data : x));
-    } else {
-      const { data } = await supabase.from('roles').insert({
-        user_id: session.user.id,
-        title: roleForm.title,
-        seniority: roleForm.seniority,
-        job_description: roleForm.job_description,
-        skills: roleSkills,
-      }).select().single();
-      if (data) setRoles(r => [data, ...r]);
+    const MAX_RETRIES = 3;
+    let attempt = 0;
+    while (attempt < MAX_RETRIES) {
+      try {
+        if (editingRole) {
+          const { data, error } = await supabase.from('roles').update({
+            title: roleForm.title,
+            seniority: roleForm.seniority,
+            job_description: roleForm.job_description,
+            skills: roleSkills,
+          }).eq('id', editingRole.id).select().single();
+          if (error) throw error;
+          if (data) setRoles(r => r.map(x => x.id === data.id ? data : x));
+        } else {
+          const { data, error } = await supabase.from('roles').insert({
+            user_id: session.user.id,
+            title: roleForm.title,
+            seniority: roleForm.seniority,
+            job_description: roleForm.job_description,
+            skills: roleSkills,
+          }).select().single();
+          if (error) throw error;
+          if (data) setRoles(r => [data, ...r]);
+        }
+        setShowRoleModal(false);
+        setEditingRole(null);
+        setRoleForm({title:"",seniority:"mid",job_description:""});
+        setRoleSkills([...DEFAULT_SKILLS]);
+        showToast("✓ Role saved");
+        return;
+      } catch(err) {
+        attempt++;
+        if (attempt === MAX_RETRIES) {
+          showToast("⚠ Failed to save role — check your connection and try again");
+          console.error("saveRole error:", err);
+        } else {
+          await new Promise(r => setTimeout(r, 1000 * attempt));
+        }
+      }
     }
-    setShowRoleModal(false);
-    setEditingRole(null);
-    setRoleForm({title:"",seniority:"mid",job_description:""});
-    setRoleSkills([...DEFAULT_SKILLS]);
-    showToast("✓ Role saved");
   };
 
   const archiveRole = async (id) => {
